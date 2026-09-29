@@ -1,0 +1,17 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+**/dist
+**/*.log
+**/backend.log
+**/web.log
+**/tsconfig.tsbuildinfo
+backend/.env
+backend/uploads
+*.tar.gz
+docs
+README.md
+.dockerignore
+Dockerfile
+docker-compose.yml

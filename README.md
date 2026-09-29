@@ -40,7 +40,8 @@ npm run dev
 SSO_ISSUER=https://mindustry.wiki:1090
 SSO_CLIENT_ID=yzfwe-blog
 SSO_CLIENT_SECRET=你的客户端密钥
-SSO_REDIRECT_URI=http://localhost:5173/auth/sso/callback
+SSO_REDIRECT_URI=https://mindustry.wiki:1081/auth/sso/callback
+SSO_POST_LOGIN_REDIRECT=https://mindustry.wiki:1081/auth/sso/callback
 SSO_ROOT_USER_IDS=0
 JWT_SECRET=随机串
 PORT=3000
@@ -58,9 +59,10 @@ GITHUB_TOKEN=
 
 客户端登记见 SSO 仓库 `clients.d/yzfwe-blog.json`，回调包含：
 
-- `http://localhost:5173/auth/sso/callback`
-- `https://mindustry.wiki:1081/auth/sso/callback`
+- `https://mindustry.wiki:1081/auth/sso/callback`（主）
+- `https://mindustry.wiki:1081/api/auth/sso/callback`
 - `https://monthzifang.top:1081/auth/sso/callback`
+- `https://monthzifang.top:1081/api/auth/sso/callback`
 
 ## 目录结构
 

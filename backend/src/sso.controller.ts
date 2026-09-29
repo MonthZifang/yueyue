@@ -43,7 +43,7 @@ export class SsoController {
       (res.req.cookies?.sso_return as string | undefined) || '/admin';
     const target = new URL(
       process.env.SSO_POST_LOGIN_REDIRECT ||
-        'http://localhost:5173/auth/sso/callback',
+        'https://mindustry.wiki:1081/auth/sso/callback',
     );
     target.searchParams.set('token', result.token);
     target.searchParams.set('username', result.user.username);

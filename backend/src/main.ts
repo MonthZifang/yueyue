@@ -57,7 +57,7 @@ async function startWorker() {
   expressApp.use('/assets', express.static(assets));
 
   const frontendDist = join(process.cwd(), '..', 'frontend', 'dist');
-  expressApp.use(express.static(frontendDist, { index: false }));
+  expressApp.use(express.static(frontendDist, { index: 'index.html' }));
   expressApp.use((req: { method: string; path: string }, res: { sendFile: (p: string) => void }, next: () => void) => {
     if (
       req.method === 'GET' &&

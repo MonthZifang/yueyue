@@ -73,7 +73,7 @@ export class SsoService {
     const clientId = process.env.SSO_CLIENT_ID ?? '';
     const clientSecret = process.env.SSO_CLIENT_SECRET ?? '';
     const redirectUri =
-      process.env.SSO_REDIRECT_URI ?? 'http://localhost:5173/auth/sso/callback';
+      process.env.SSO_REDIRECT_URI ?? 'https://mindustry.wiki:1081/auth/sso/callback';
     if (!issuer || !clientId) {
       throw new BadRequestException(
         'SSO 未配置：请设置 SSO_ISSUER、SSO_CLIENT_ID（及 SSO_CLIENT_SECRET）',
