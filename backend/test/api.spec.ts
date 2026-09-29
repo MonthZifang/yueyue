@@ -20,6 +20,11 @@ describe('Blog API', () => {
   });
 
   afterAll(async () => {
+    // 清理测试产生的互动数据，避免污染站点
+    await prisma.comment.deleteMany();
+    await prisma.like.deleteMany();
+    await prisma.guestbook.deleteMany();
+    await prisma.user.deleteMany({ where: { username: 'tester' } });
     await app.close();
   });
 
