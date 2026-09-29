@@ -12,9 +12,16 @@ export default function SsoCallback() {
 
   useEffect(() => {
     const token = params.get('token');
+    const code = params.get('code');
     const username = params.get('username') || 'sso';
     const returnTo = params.get('returnTo') || '/';
     if (!token) {
+      if (code) {
+        setError(
+          '回调地址配置错误：授权码打到了前端。请把 SSO_REDIRECT_URI 设为 /api/auth/sso/callback',
+        );
+        return;
+      }
       setError('SSO 登录失败：缺少 token');
       return;
     }

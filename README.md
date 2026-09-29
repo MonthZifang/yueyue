@@ -40,7 +40,9 @@ npm run dev
 SSO_ISSUER=https://mindustry.wiki:1090
 SSO_CLIENT_ID=yzfwe-blog
 SSO_CLIENT_SECRET=你的客户端密钥
-SSO_REDIRECT_URI=https://mindustry.wiki:1081/auth/sso/callback
+# 授权码先回到后端 API 换 token
+SSO_REDIRECT_URI=https://mindustry.wiki:1081/api/auth/sso/callback
+# 换码成功后再进站点
 SSO_POST_LOGIN_REDIRECT=https://mindustry.wiki:1081/auth/sso/callback
 SSO_ROOT_USER_IDS=0
 JWT_SECRET=随机串

@@ -16,7 +16,9 @@ services:
       SSO_ISSUER: ${SSO_ISSUER:-https://mindustry.wiki:1090}
       SSO_CLIENT_ID: ${SSO_CLIENT_ID:-yzfwe-blog}
       SSO_CLIENT_SECRET: ${SSO_CLIENT_SECRET:-}
-      SSO_REDIRECT_URI: ${SSO_REDIRECT_URI:-https://mindustry.wiki:1081/auth/sso/callback}
+      # 授权码回调进后端换 token
+      SSO_REDIRECT_URI: ${SSO_REDIRECT_URI:-https://mindustry.wiki:1081/api/auth/sso/callback}
+      # 换码后跳前端登录落地页
       SSO_POST_LOGIN_REDIRECT: ${SSO_POST_LOGIN_REDIRECT:-https://mindustry.wiki:1081/auth/sso/callback}
       SSO_ROOT_USER_IDS: ${SSO_ROOT_USER_IDS:-0}
       JWT_SECRET: ${JWT_SECRET:-yueyuedao-blog-jwt}
