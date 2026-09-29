@@ -72,13 +72,10 @@ export default function Archive() {
           <div className="space-y-6">
             {(y.months || []).map((m) => (
               <div key={`${y.year}-${m.month}`} className="border-l-2 border-teal-soft pl-4">
-                <h3 className="mb-3 font-display text-lg font-bold text-teal">
-                  {Number(m.month) || m.month} 月
-                </h3>
                 <div className="space-y-4">
                   {(m.days || []).map((d) => (
                     <div key={`${y.year}-${m.month}-${d.day}`}>
-                      <div className="mb-2 text-sm font-medium text-ink/60 dark:text-white/50">
+                      <div className="mb-2 font-display text-lg font-bold text-teal">
                         {Number(m.month) || m.month} 月 {Number(d.day) || d.day} 日
                       </div>
                       <div className="space-y-2">
