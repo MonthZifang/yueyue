@@ -98,15 +98,32 @@ export const api = {
   patchProjectNav: (id: number, body: Record<string, unknown>) =>
     client.post<Project>(`/admin/projects/${id}/nav`, body).then((r) => r.data),
   deleteProject: (id: number) => client.delete(`/admin/projects/${id}`).then((r) => r.data),
-  dnsLookup: (domain: string) =>
-    client.get('/admin/tools/dns', { params: { domain } }).then((r) => r.data),
-  proxyFetch: (url: string) =>
-    client.post('/admin/tools/proxy', { url }).then((r) => r.data),
   listAllowHosts: () => client.get('/admin/tools/proxy/allowlist').then((r) => r.data as AllowHost[]),
   addAllowHost: (host: string, note?: string) =>
     client.post('/admin/tools/proxy/allowlist', { host, note }).then((r) => r.data),
   removeAllowHost: (id: number) =>
     client.delete(`/admin/tools/proxy/allowlist/${id}`).then((r) => r.data),
+  dnsLookup: (domain: string, dnsProfileId?: number) =>
+    client.get('/admin/tools/dns', { params: { domain, dnsProfileId } }).then((r) => r.data),
+  proxyFetch: (url: string, proxyProfileId?: number) =>
+    client.post('/admin/tools/proxy', { url, proxyProfileId }).then((r) => r.data),
+  listDnsProfiles: () => client.get('/admin/tools/dns/profiles').then((r) => r.data),
+  createDnsProfile: (name: string, servers: string) =>
+    client.post('/admin/tools/dns/profiles', { name, servers }).then((r) => r.data),
+  patchDnsProfile: (id: number, body: Record<string, unknown>) =>
+    client.post(`/admin/tools/dns/profiles/${id}`, body).then((r) => r.data),
+  deleteDnsProfile: (id: number) =>
+    client.delete(`/admin/tools/dns/profiles/${id}`).then((r) => r.data),
+  listProxyProfiles: () => client.get('/admin/tools/proxy/profiles').then((r) => r.data),
+  createProxyProfile: (body: Record<string, unknown>) =>
+    client.post('/admin/tools/proxy/profiles', body).then((r) => r.data),
+  patchProxyProfile: (id: number, body: Record<string, unknown>) =>
+    client.post(`/admin/tools/proxy/profiles/${id}`, body).then((r) => r.data),
+  deleteProxyProfile: (id: number) =>
+    client.delete(`/admin/tools/proxy/profiles/${id}`).then((r) => r.data),
+  viewStats: () => client.get('/admin/views').then((r) => r.data),
+  resetViews: (postId: number) =>
+    client.post(`/admin/views/${postId}/reset`).then((r) => r.data),
   toolAudit: (limit = 50) =>
     client.get('/admin/tools/audit', { params: { limit } }).then((r) => r.data),
   site: () => client.get<SiteSetting>('/site').then((r) => r.data),

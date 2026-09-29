@@ -95,7 +95,25 @@ export class ContentService {
     if (!post) throw new NotFoundException('文章不存在');
 
     let viewCount = post.viewCount;
-    if (countView) {
+    if (countView && fingerprint?.trim()) {
+      // 同一 fingerprint 只计 1 次阅读
+      const fp = fingerprint.trim();
+      const exists = await this.prisma.postView.findUnique({
+        where: { postId_fingerprint: { postId: post.id, fingerprint: fp } },
+      });
+      if (!exists) {
+        await this.prisma.postView.create({
+          data: { postId: post.id, fingerprint: fp },
+        });
+        const updated = await this.prisma.post.update({
+          where: { id: post.id },
+          data: { viewCount: { increment: 1 } },
+          select: { viewCount: true },
+        });
+        viewCount = updated.viewCount;
+      }
+    } else if (countView) {
+      // 无 fingerprint 时仍计一次，避免完全丢数
       const updated = await this.prisma.post.update({
         where: { id: post.id },
         data: { viewCount: { increment: 1 } },
@@ -122,6 +140,38 @@ export class ContentService {
       liked,
       _count: undefined,
     };
+  }
+
+  /** 后台：重置某文阅读数（按独立访客重算） */
+  async resetPostViews(postId: number) {
+    const row = await this.prisma.post.findUnique({ where: { id: postId } });
+    if (!row) throw new NotFoundException('文章不存在');
+    await this.prisma.postView.deleteMany({ where: { postId } });
+    return this.prisma.post.update({
+      where: { id: postId },
+      data: { viewCount: 0 },
+    });
+  }
+
+  async viewStats() {
+    const posts = await this.prisma.post.findMany({
+      where: published,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        viewCount: true,
+        _count: { select: { views: true } },
+      },
+      orderBy: { viewCount: 'desc' },
+    });
+    return posts.map((p) => ({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      viewCount: p.viewCount,
+      uniqueViews: p._count.views,
+    }));
   }
 
   async listComments(slug: string) {

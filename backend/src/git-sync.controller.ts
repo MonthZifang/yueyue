@@ -45,6 +45,8 @@ class NavPatchDto {
   @IsOptional() @IsBoolean() indexed?: boolean;
   @IsOptional() @IsInt() navOrder?: number;
   @IsOptional() @IsString() @MaxLength(20000) customHtml?: string;
+  @IsOptional() @IsString() @MaxLength(200) customTitle?: string;
+  @IsOptional() @IsString() @MaxLength(500) customSummary?: string;
   @IsOptional() @IsString() @MaxLength(200) title?: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
 }
@@ -56,6 +58,8 @@ class ManualProjectDto {
   @IsOptional() @IsString() techStack?: string;
   @IsOptional() @IsString() cover?: string;
   @IsOptional() @IsString() @MaxLength(20000) customHtml?: string;
+  @IsOptional() @IsString() @MaxLength(200) customTitle?: string;
+  @IsOptional() @IsString() @MaxLength(500) customSummary?: string;
   @IsOptional() @IsBoolean() showInNav?: boolean;
   @IsOptional() @IsInt() navOrder?: number;
   @IsOptional() @IsInt() sort?: number;

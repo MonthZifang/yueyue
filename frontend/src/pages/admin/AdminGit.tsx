@@ -12,6 +12,8 @@ export default function AdminGit() {
   const [q, setQ] = useState('');
   const [msg, setMsg] = useState('');
   const [custom, setCustom] = useState('');
+  const [customTitle, setCustomTitle] = useState('');
+  const [customSummary, setCustomSummary] = useState('');
   const [selected, setSelected] = useState<Project | null>(null);
   const [filter, setFilter] = useState<'all' | 'hidden' | 'visible' | 'github' | 'manual'>('all');
 
@@ -66,6 +68,8 @@ export default function AdminGit() {
       indexed: p.indexed,
       navOrder: p.navOrder ?? 0,
       customHtml: custom,
+      customTitle: customTitle || null,
+      customSummary: customSummary || null,
       title: p.title,
       description: p.description,
     });
@@ -278,6 +282,10 @@ export default function AdminGit() {
 
               {selected?.id === p.id && (
                 <div className="mt-3 space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input className="input" placeholder="替换显示名称（可选）" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} />
+                    <input className="input" placeholder="替换简介（可选）" value={customSummary} onChange={(e) => setCustomSummary(e.target.value)} />
+                  </div>
                   <textarea
                     className="input min-h-[120px] font-mono text-sm"
                     placeholder="Markdown 自定义内容"

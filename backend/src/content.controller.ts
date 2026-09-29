@@ -268,6 +268,18 @@ export class ContentController {
     return this.content.deleteGallery(id);
   }
 
+  @Get('admin/views')
+  @UseGuards(RootGuard)
+  viewStats() {
+    return this.content.viewStats();
+  }
+
+  @Post('admin/views/:postId/reset')
+  @UseGuards(RootGuard)
+  resetViews(@Param('postId', ParseIntPipe) postId: number) {
+    return this.content.resetPostViews(postId);
+  }
+
   @Patch('admin/about')
   @UseGuards(RootGuard)
   updateAbout(@Body() dto: AboutDto) {

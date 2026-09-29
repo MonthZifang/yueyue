@@ -44,6 +44,7 @@ model Post {
   tags        Tag[]
   comments    Comment[]
   likes       Like[]
+  views       PostView[]
 }
 
 model Comment {
@@ -102,7 +103,9 @@ model Project {
   fullName     String?
   stars        Int      @default(0)
   homepage     String?
-  customHtml   String?  // 自定义正文（Markdown）
+  customTitle  String?  // 替换显示名称
+  customSummary String? // 替换简介
+  customHtml   String?  // 卡片 Markdown 内容
   showInNav    Boolean  @default(true)
   hidden       Boolean  @default(false) // 前台是否隐藏
   indexed      Boolean  @default(true)  // 是否参与搜索索引
@@ -111,6 +114,34 @@ model Project {
   gitSource    GitSource? @relation(fields: [gitSourceId], references: [id], onDelete: SetNull)
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
+}
+
+model ProxyProfile {
+  id        Int     @id @default(autoincrement())
+  name      String
+  host      String
+  port      Int
+  username  String?
+  password  String?
+  protocol  String  @default("http") // http | socks5
+  enabled   Boolean @default(true)
+}
+
+model DnsProfile {
+  id       Int     @id @default(autoincrement())
+  name     String
+  servers  String  // 逗号分隔 DNS IP
+  enabled  Boolean @default(true)
+}
+
+model PostView {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  fingerprint String
+  createdAt DateTime @default(now())
+
+  @@unique([postId, fingerprint])
 }
 
 model GitSource {

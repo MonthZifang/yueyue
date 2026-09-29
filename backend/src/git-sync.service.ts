@@ -212,6 +212,8 @@ export class GitSyncService {
       showInNav?: boolean;
       navOrder?: number;
       customHtml?: string;
+      customTitle?: string;
+      customSummary?: string;
       title?: string;
       description?: string;
       hidden?: boolean;
@@ -226,6 +228,8 @@ export class GitSyncService {
         showInNav: payload.showInNav,
         navOrder: payload.navOrder,
         customHtml: payload.customHtml,
+        customTitle: payload.customTitle,
+        customSummary: payload.customSummary,
         title: payload.title,
         description: payload.description,
         hidden: payload.hidden,

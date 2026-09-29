@@ -93,6 +93,8 @@ export interface Project {
   source?: string;
   fullName?: string | null;
   customHtml?: string | null;
+  customTitle?: string | null;
+  customSummary?: string | null;
   showInNav?: boolean;
   navOrder?: number;
   hidden?: boolean;
