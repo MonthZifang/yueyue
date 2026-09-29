@@ -15,13 +15,16 @@ import { GitSyncService } from './git-sync.service';
 import { SsoController } from './sso.controller';
 import { SsoService } from './sso.service';
 import { RootGuard } from './root.guard';
+import { loadAppConfig } from './config';
+
+const cfg = loadAppConfig();
 
 @Module({
   imports: [
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'yueyuedao-dev-secret',
-      signOptions: { expiresIn: '7d' },
+      secret: cfg.auth.jwtSecret,
+      signOptions: { expiresIn: cfg.auth.tokenExpiresIn || '7d' },
     }),
   ],
   controllers: [

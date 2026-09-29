@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from './prisma.service';
+import { getSsoConfig, isRootSsoId } from './config';
 
 function b64url(buf: Buffer | string): string {
   return Buffer.from(buf)
@@ -35,24 +36,14 @@ export interface SsoProfile {
   custom_id?: string;
 }
 
-/** root 判定：SSO user_id 为 "0"，或 public_id 为 0，或 custom_id/username 为 root。 */
+/** root 判定：SSO user_id=0 / public_id=0 / 配置里的 rootUserIds */
 export function isRootProfile(p: {
   user_id?: string | number;
   public_id?: number | null;
   custom_id?: string;
   username?: string;
 }): boolean {
-  const uid = String(p.user_id ?? '');
-  if (uid === '0') return true;
-  if (p.public_id === 0) return true;
-  if (p.custom_id === 'root') return true;
-  if (p.username === 'root' && (uid === '0' || p.public_id === 0)) return true;
-  const extra = (process.env.SSO_ROOT_USER_IDS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (uid && extra.includes(uid)) return true;
-  return false;
+  return isRootSsoId(p.user_id, p.public_id ?? null);
 }
 
 @Injectable()
@@ -68,27 +59,31 @@ export class SsoService {
     private readonly jwt: JwtService,
   ) {}
 
-  private config(): SsoConfig {
-    const issuer = process.env.SSO_ISSUER?.replace(/\/$/, '');
-    const clientId = process.env.SSO_CLIENT_ID ?? '';
-    const clientSecret = process.env.SSO_CLIENT_SECRET ?? '';
-    // 业务站点固定 mindustry.wiki:1081；换码进 /api/auth/sso/callback
-    const redirectUri =
-      process.env.SSO_REDIRECT_URI ??
-      'https://mindustry.wiki:1081/api/auth/sso/callback';
-    if (!issuer || !clientId) {
+  private config() {
+    const sso = getSsoConfig();
+    if (!sso.issuer || !sso.clientId) {
       throw new BadRequestException(
-        'SSO 未配置：请设置 SSO_ISSUER、SSO_CLIENT_ID（及 SSO_CLIENT_SECRET）',
+        'SSO 未配置：请检查 config/app.config.json 的 sso.issuer / sso.clientId',
       );
     }
-    return { issuer, clientId, clientSecret, redirectUri };
+    return {
+      issuer: sso.issuer.replace(/\/$/, ''),
+      clientId: sso.clientId,
+      clientSecret: sso.clientSecret,
+      redirectUri: sso.redirectUri,
+      postLoginRedirect: sso.postLoginRedirect,
+      scopes: sso.scopes?.length
+        ? sso.scopes.join(' ')
+        : 'openid profile email offline_access',
+    };
   }
 
   isEnabled(): boolean {
-    return Boolean(process.env.SSO_ISSUER && process.env.SSO_CLIENT_ID);
+    const sso = getSsoConfig();
+    return Boolean(sso.enabled && sso.issuer && sso.clientId);
   }
 
-  beginLogin(returnTo = '/', hostHint?: string) {
+  beginLogin(returnTo = '/') {
     const cfg = this.config();
     const state = b64url(randomBytes(16));
     const nonce = b64url(randomBytes(16));
@@ -97,24 +92,20 @@ export class SsoService {
     const exp = Date.now() + 10 * 60 * 1000;
     this.pending.set(state, { state, nonce, verifier, exp });
 
-    // 统一回调到 mindustry.wiki:1081（后端换码入口）
-    const redirectUri =
-      process.env.SSO_REDIRECT_URI ??
-      'https://mindustry.wiki:1081/api/auth/sso/callback';
-
+    // 严格使用配置里的 redirectUri（必须是后端 /api/auth/sso/callback）
     const url = new URL(`${cfg.issuer}/oauth2/authorize`);
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: cfg.clientId,
-      redirect_uri: redirectUri,
-      scope: 'openid profile email offline_access',
+      redirect_uri: cfg.redirectUri,
+      scope: cfg.scopes,
       state,
       nonce,
       code_challenge: challenge,
       code_challenge_method: 'S256',
     });
     url.search = params.toString();
-    return { url: url.toString(), state, returnTo, redirectUri };
+    return { url: url.toString(), state, returnTo, redirectUri: cfg.redirectUri };
   }
 
   async callback(code: string, state: string) {

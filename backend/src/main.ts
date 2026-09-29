@@ -33,6 +33,7 @@ async function startWorker() {
   const { ValidationPipe } = await import('@nestjs/common');
   const { join } = await import('path');
   const { AppModule } = await import('./app.module');
+  const { loadAppConfig } = await import('./config');
 
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
@@ -72,7 +73,9 @@ async function startWorker() {
     next();
   });
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  const port = process.env.PORT
+    ? Number(process.env.PORT)
+    : loadAppConfig().server.port || 3000;
   await app.listen(port);
   console.log(`[worker ${process.pid}] listening on ${port}`);
 }

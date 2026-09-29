@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { SsoService } from './sso.service';
+import { getSsoConfig, loadAppConfig } from './config';
 
 @Controller('auth/sso')
 export class SsoController {
@@ -8,7 +9,13 @@ export class SsoController {
 
   @Get('status')
   status() {
-    return { enabled: this.sso.isEnabled() };
+    const sso = getSsoConfig();
+    return {
+      enabled: this.sso.isEnabled(),
+      issuer: sso.issuer,
+      redirectUri: sso.redirectUri,
+      postLoginRedirect: sso.postLoginRedirect,
+    };
   }
 
   @Get('login')
@@ -17,10 +24,7 @@ export class SsoController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: { headers: { host?: string } },
   ) {
-    const { url, state, returnTo: to } = this.sso.beginLogin(
-      returnTo || '/',
-      req.headers.host,
-    );
+    const { url, state, returnTo: to } = this.sso.beginLogin(returnTo || '/');
     res.cookie('sso_state', state, {
       httpOnly: true,
       sameSite: 'lax',
@@ -31,7 +35,8 @@ export class SsoController {
       sameSite: 'lax',
       maxAge: 10 * 60 * 1000,
     });
-    return { url };
+    // 方便排查：把实际使用的 redirect_uri 一并返回
+    return { url, redirectUri: getSsoConfig().redirectUri };
   }
 
   @Get('callback')
@@ -41,12 +46,11 @@ export class SsoController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.sso.callback(code ?? '', state ?? '');
-    // 把 token 交给前端 SPA：302 到前端回调页，token 放在 fragment 避免进日志
     const returnPath =
-      (res.req.cookies?.sso_return as string | undefined) || '/admin';
+      (res.req.cookies?.sso_return as string | undefined) || '/';
+    const app = loadAppConfig();
     const target = new URL(
-      process.env.SSO_POST_LOGIN_REDIRECT ||
-        'https://mindustry.wiki:1081/auth/sso/callback',
+      app.sso.postLoginRedirect || `${app.site.origin}/auth/sso/callback`,
     );
     target.searchParams.set('token', result.token);
     target.searchParams.set('username', result.user.username);

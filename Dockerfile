@@ -49,6 +49,7 @@ COPY --from=build /app/backend/dist ./backend/dist
 COPY --from=build /app/backend/prisma ./backend/prisma
 COPY --from=build /app/frontend/dist ./frontend/dist
 COPY --from=build /app/assets ./assets
+COPY config ./config
 
 # writable dirs for SQLite / uploads
 RUN mkdir -p /app/backend/uploads \

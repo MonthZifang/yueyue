@@ -24,6 +24,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-yueyuedao-blog-jwt}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
+      # 配置文件（回调 / SSO / 端口等）
+      - ./config:/app/config
       # 持久化 SQLite 与上传
       - ./backend/prisma:/app/backend/prisma
       - ./backend/uploads:/app/backend/uploads

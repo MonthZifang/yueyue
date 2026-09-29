@@ -1,0 +1,26 @@
+{
+  "site": {
+    "name": "月月岛",
+    "origin": "https://mindustry.wiki:1081"
+  },
+  "server": {
+    "port": 1081,
+    "clusterWorkers": 2
+  },
+  "sso": {
+    "enabled": true,
+    "issuer": "https://mindustry.wiki:1090",
+    "clientId": "yzfwe-blog",
+    "clientSecret": "7e7807f74345f27ec15ad5a085efdc1861603cccda438ddb038b61c441f4d815",
+    "redirectUri": "https://mindustry.wiki:1081/api/auth/sso/callback",
+    "postLoginRedirect": "https://mindustry.wiki:1081/auth/sso/callback",
+    "scopes": ["openid", "profile", "email", "offline_access"],
+    "rootUserIds": ["0"],
+    "rootPublicIds": [0]
+  },
+  "auth": {
+    "jwtSecret": "yueyuedao-blog-jwt",
+    "tokenExpiresIn": "7d"
+  },
+  "proxyAllowHosts": ["api.github.com", "github.com", "raw.githubusercontent.com"]
+}

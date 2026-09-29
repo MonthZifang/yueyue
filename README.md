@@ -34,7 +34,39 @@ npm run dev
 - 前台：http://localhost:5173
 - API：http://localhost:3000
 
-## 环境变量（`backend/.env`）
+## 配置文件（推荐）
+
+统一配置在 **`config/app.config.json`**（改完重启后端生效）：
+
+```json
+{
+  "site": {
+    "origin": "https://mindustry.wiki:1081"
+  },
+  "sso": {
+    "issuer": "https://mindustry.wiki:1090",
+    "clientId": "yzfwe-blog",
+    "clientSecret": "...",
+    "redirectUri": "https://mindustry.wiki:1081/api/auth/sso/callback",
+    "postLoginRedirect": "https://mindustry.wiki:1081/auth/sso/callback",
+    "rootUserIds": ["0"]
+  },
+  "server": {
+    "port": 1081
+  }
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `sso.issuer` | SSO 端点 |
+| `sso.redirectUri` | **授权码回调（必须是后端 `/api/auth/sso/callback`）** |
+| `sso.postLoginRedirect` | 换码成功后跳到的站点地址 |
+| `sso.rootUserIds` | 允许进后台的 SSO user_id |
+
+环境变量 `SSO_*` / `PORT` / `JWT_SECRET` 可覆盖配置文件。
+
+## 环境变量（可选覆盖）
 
 ```bash
 SSO_ISSUER=https://mindustry.wiki:1090
