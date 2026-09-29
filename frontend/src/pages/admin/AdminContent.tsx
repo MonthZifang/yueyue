@@ -4,6 +4,7 @@ import type { FriendLink, GalleryItem, SiteSetting, Tag } from '../../types';
 
 export default function AdminContent() {
   const [tab, setTab] = useState<'site' | 'tags' | 'friends' | 'gallery' | 'about'>('site');
+  const [galleryFilter, setGalleryFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [site, setSite] = useState<SiteSetting | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagName, setTagName] = useState('');
@@ -14,6 +15,12 @@ export default function AdminContent() {
   const [aboutContent, setAboutContent] = useState('');
   const [msg, setMsg] = useState('');
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+
+  const filteredGallery = gallery.filter((g) => {
+    if (galleryFilter === 'hidden') return g.hidden;
+    if (galleryFilter === 'visible') return !g.hidden;
+    return true;
+  });
 
   function load() {
     api.adminSite().then(setSite);
@@ -214,25 +221,52 @@ export default function AdminContent() {
         <div className="card space-y-4 p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-lg font-bold">画廊整理</h2>
-            <button type="button" className="btn" onClick={addGallery}>
-              新增画作
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {(
+                [
+                  ['all', '全部'],
+                  ['visible', '显示中'],
+                  ['hidden', '已隐藏'],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={galleryFilter === k ? 'btn !py-1' : 'btn-ghost !py-1'}
+                  onClick={() => setGalleryFilter(k)}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" className="btn" onClick={addGallery}>
+                新增画作
+              </button>
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {gallery.map((g, index) => (
+            {filteredGallery.map((g, index) => (
               <div key={g.id} className="rounded-2xl border border-teal-soft/50 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs text-ink/50">排序 #{index + 1}</span>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-ink/50">#{index + 1}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        g.hidden ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {g.hidden ? '已隐藏' : '显示中'}
+                    </span>
+                  </div>
                   <div className="flex gap-1">
                     <button
                       type="button"
                       className="btn-ghost !px-2 !py-1"
                       disabled={index === 0}
                       onClick={async () => {
-                        const prev = gallery[index - 1];
+                        const prev = filteredGallery[index - 1];
                         if (!prev) return;
-                        await api.updateGallery(g.id, { sort: prev.sort });
-                        await api.updateGallery(prev.id, { sort: g.sort });
+                        await api.updateGallery(g.id, { sort: prev.sort ?? 0 });
+                        await api.updateGallery(prev.id, { sort: g.sort ?? 0 });
                         load();
                       }}
                     >
@@ -241,12 +275,12 @@ export default function AdminContent() {
                     <button
                       type="button"
                       className="btn-ghost !px-2 !py-1"
-                      disabled={index === gallery.length - 1}
+                      disabled={index === filteredGallery.length - 1}
                       onClick={async () => {
-                        const next = gallery[index + 1];
+                        const next = filteredGallery[index + 1];
                         if (!next) return;
-                        await api.updateGallery(g.id, { sort: next.sort });
-                        await api.updateGallery(next.id, { sort: g.sort });
+                        await api.updateGallery(g.id, { sort: next.sort ?? 0 });
+                        await api.updateGallery(next.id, { sort: g.sort ?? 0 });
                         load();
                       }}
                     >
@@ -254,21 +288,33 @@ export default function AdminContent() {
                     </button>
                   </div>
                 </div>
-                <img src={g.imageUrl} alt={g.title} className="h-36 w-full rounded-xl object-cover" />
+                <img
+                  src={g.imageUrl}
+                  alt={g.title}
+                  className={`h-36 w-full rounded-xl object-cover ${g.hidden ? 'opacity-50' : ''}`}
+                />
                 <input
                   className="input mt-2"
                   value={g.title}
-                  onChange={(e) => setGallery((list) => list.map((x) => (x.id === g.id ? { ...x, title: e.target.value } : x)))}
+                  onChange={(e) =>
+                    setGallery((list) => list.map((x) => (x.id === g.id ? { ...x, title: e.target.value } : x)))
+                  }
                 />
                 <input
                   className="input mt-2"
                   value={g.imageUrl}
-                  onChange={(e) => setGallery((list) => list.map((x) => (x.id === g.id ? { ...x, imageUrl: e.target.value } : x)))}
+                  onChange={(e) =>
+                    setGallery((list) => list.map((x) => (x.id === g.id ? { ...x, imageUrl: e.target.value } : x)))
+                  }
                 />
                 <input
                   className="input mt-2"
                   value={g.description ?? ''}
-                  onChange={(e) => setGallery((list) => list.map((x) => (x.id === g.id ? { ...x, description: e.target.value } : x)))}
+                  onChange={(e) =>
+                    setGallery((list) =>
+                      list.map((x) => (x.id === g.id ? { ...x, description: e.target.value } : x)),
+                    )
+                  }
                 />
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button
@@ -287,6 +333,15 @@ export default function AdminContent() {
                   >
                     保存
                   </button>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() =>
+                      api.updateGallery(g.id, { hidden: !g.hidden }).then(load)
+                    }
+                  >
+                    {g.hidden ? '取消隐藏' : '隐藏'}
+                  </button>
                   <label className="btn-ghost cursor-pointer">
                     上传图
                     <input
@@ -302,7 +357,13 @@ export default function AdminContent() {
                       }}
                     />
                   </label>
-                  <button type="button" className="btn-ghost text-red-600" onClick={() => api.deleteGallery(g.id).then(load)}>
+                  <button
+                    type="button"
+                    className="btn-ghost text-red-600"
+                    onClick={() => {
+                      if (confirm('删除该画作？')) api.deleteGallery(g.id).then(load);
+                    }}
+                  >
                     删除
                   </button>
                 </div>
@@ -311,7 +372,6 @@ export default function AdminContent() {
           </div>
         </div>
       )}
-
       {tab === 'about' && (
         <form onSubmit={saveAbout} className="card space-y-3 p-6">
           <input className="input" value={aboutTitle} onChange={(e) => setAboutTitle(e.target.value)} />

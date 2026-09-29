@@ -180,7 +180,7 @@ export class ContentController {
 
   @Get('gallery')
   gallery() {
-    return this.content.gallery();
+    return this.content.gallery(false);
   }
 
   @Get('about')
@@ -247,7 +247,7 @@ export class ContentController {
   @Get('admin/gallery')
   @UseGuards(RootGuard)
   adminGallery() {
-    return this.content.gallery();
+    return this.content.gallery(true);
   }
 
   @Post('admin/gallery')
@@ -258,7 +258,7 @@ export class ContentController {
 
   @Patch('admin/gallery/:id')
   @UseGuards(RootGuard)
-  updateGallery(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<GalleryDto>) {
+  updateGallery(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<GalleryDto> & { hidden?: boolean }) {
     return this.content.updateGallery(id, dto);
   }
 

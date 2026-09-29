@@ -377,8 +377,11 @@ export class ContentService {
     });
   }
 
-  async gallery() {
-    return this.prisma.galleryItem.findMany({ orderBy: { sort: 'asc' } });
+  async gallery(includeHidden = false) {
+    return this.prisma.galleryItem.findMany({
+      where: includeHidden ? {} : { hidden: false },
+      orderBy: { sort: 'asc' },
+    });
   }
 
   async createGallery(data: {
@@ -386,6 +389,7 @@ export class ContentService {
     imageUrl: string;
     description?: string;
     sort?: number;
+    hidden?: boolean;
   }) {
     return this.prisma.galleryItem.create({
       data: {
@@ -393,6 +397,7 @@ export class ContentService {
         imageUrl: data.imageUrl,
         description: data.description,
         sort: data.sort ?? 0,
+        hidden: data.hidden ?? false,
       },
     });
   }
@@ -404,6 +409,7 @@ export class ContentService {
       imageUrl: string;
       description: string;
       sort: number;
+      hidden: boolean;
     }>,
   ) {
     const row = await this.prisma.galleryItem.findUnique({ where: { id } });

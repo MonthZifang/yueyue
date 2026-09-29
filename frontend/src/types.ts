@@ -111,6 +111,7 @@ export interface GalleryItem {
   imageUrl: string;
   description?: string | null;
   sort?: number;
+  hidden?: boolean;
 }
 
 export interface About {
