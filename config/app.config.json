@@ -11,7 +11,7 @@
     "enabled": true,
     "issuer": "https://mindustry.wiki:1090",
     "clientId": "yzfwe-blog",
-    "clientSecret": "7e7807f74345f27ec15ad5a085efdc1861603cccda438ddb038b61c441f4d815",
+    "clientSecret": "72ePWVhnwmplto9tfNfloc05EGk9sQa9kJZJjzX-sxA",
     "redirectUri": "https://mindustry.wiki:1081/api/auth/sso/callback",
     "postLoginRedirect": "https://mindustry.wiki:1081/auth/sso/callback",
     "scopes": ["openid", "profile", "email", "offline_access"],

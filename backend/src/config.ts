@@ -119,7 +119,8 @@ let cached: AppConfig | null = null;
 
 export function loadAppConfig(): AppConfig {
   if (cached) return cached;
-  cached = envOverrides(deepMerge(DEFAULTS, loadFile()));
+  // 配置文件优先于环境变量：config/app.config.json 是回调与 SSO 的权威来源
+  cached = deepMerge(envOverrides(DEFAULTS), loadFile());
   return cached;
 }
 
