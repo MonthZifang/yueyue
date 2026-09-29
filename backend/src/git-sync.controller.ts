@@ -28,10 +28,21 @@ class SourceDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsOptional() @IsBoolean() autoSync?: boolean;
+  @IsOptional() @IsBoolean() hiddenNew?: boolean;
+}
+
+class SourcePatchDto {
+  @IsOptional() @IsBoolean() enabled?: boolean;
+  @IsOptional() @IsBoolean() autoSync?: boolean;
+  @IsOptional() @IsBoolean() hiddenNew?: boolean;
 }
 
 class NavPatchDto {
   @IsOptional() @IsBoolean() showInNav?: boolean;
+  @IsOptional() @IsBoolean() hidden?: boolean;
+  @IsOptional() @IsBoolean() indexed?: boolean;
   @IsOptional() @IsInt() navOrder?: number;
   @IsOptional() @IsString() @MaxLength(20000) customHtml?: string;
   @IsOptional() @IsString() @MaxLength(200) title?: string;
@@ -75,7 +86,16 @@ export class GitSyncController {
   @Post('admin/git/sources')
   @UseGuards(RootGuard)
   addSource(@Body() dto: SourceDto) {
-    return this.sync.addSource(dto.kind, dto.name);
+    return this.sync.addSource(dto.kind, dto.name, {
+      autoSync: dto.autoSync,
+      hiddenNew: dto.hiddenNew,
+    });
+  }
+
+  @Post('admin/git/sources/:id')
+  @UseGuards(RootGuard)
+  patchSource(@Param('id', ParseIntPipe) id: number, @Body() dto: SourcePatchDto) {
+    return this.sync.patchSource(id, dto);
   }
 
   @Delete('admin/git/sources/:id')
@@ -94,6 +114,12 @@ export class GitSyncController {
   @UseGuards(RootGuard)
   syncAll() {
     return this.sync.syncAll();
+  }
+
+  @Get('admin/git/projects')
+  @UseGuards(RootGuard)
+  adminProjects(@Query('q') q?: string, @Query('source') source?: string) {
+    return this.sync.adminListProjects(q, source);
   }
 
   @Post('admin/projects')

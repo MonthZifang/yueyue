@@ -82,13 +82,17 @@ export const api = {
     client.get<Project[]>('/projects/search', { params: { q, source } }).then((r) => r.data),
   navProjects: () => client.get<Project[]>('/projects/nav').then((r) => r.data),
   listGitSources: () => client.get<GitSource[]>('/admin/git/sources').then((r) => r.data),
-  addGitSource: (kind: string, name: string) =>
-    client.post('/admin/git/sources', { kind, name }).then((r) => r.data),
+  addGitSource: (kind: string, name: string, options?: { autoSync?: boolean; hiddenNew?: boolean }) =>
+    client.post('/admin/git/sources', { kind, name, ...options }).then((r) => r.data),
+  patchGitSource: (id: number, body: Record<string, unknown>) =>
+    client.post(`/admin/git/sources/${id}`, body).then((r) => r.data),
   removeGitSource: (id: number) =>
     client.delete(`/admin/git/sources/${id}`).then((r) => r.data),
   syncGitSource: (id: number) =>
     client.post(`/admin/git/sources/${id}/sync`).then((r) => r.data),
   syncAllGit: () => client.post('/admin/git/sync-all').then((r) => r.data),
+  adminListProjects: (q?: string, source?: string) =>
+    client.get<Project[]>('/admin/git/projects', { params: { q, source } }).then((r) => r.data),
   createManualProject: (body: Record<string, unknown>) =>
     client.post<Project>('/admin/projects', body).then((r) => r.data),
   patchProjectNav: (id: number, body: Record<string, unknown>) =>

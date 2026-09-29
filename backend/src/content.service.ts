@@ -357,6 +357,7 @@ export class ContentService {
 
   async projects() {
     return this.prisma.project.findMany({
+      where: { hidden: false },
       orderBy: [{ stars: 'desc' }, { sort: 'asc' }],
       select: {
         id: true,

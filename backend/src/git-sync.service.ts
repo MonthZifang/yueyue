@@ -59,7 +59,7 @@ export class GitSyncService {
     });
   }
 
-  async addSource(kind: string, name: string) {
+  async addSource(kind: string, name: string, options?: { autoSync?: boolean; hiddenNew?: boolean }) {
     if (!['user', 'org'].includes(kind)) {
       throw new BadRequestException('kind 必须是 user 或 org');
     }
@@ -69,9 +69,24 @@ export class GitSyncService {
     }
     return this.prisma.gitSource.upsert({
       where: { name_kind: { name: login, kind } },
-      update: { enabled: true },
-      create: { kind, name: login },
+      update: {
+        enabled: true,
+        autoSync: options?.autoSync,
+        hiddenNew: options?.hiddenNew,
+      },
+      create: {
+        kind,
+        name: login,
+        autoSync: options?.autoSync ?? false,
+        hiddenNew: options?.hiddenNew ?? false,
+      },
     });
+  }
+
+  async patchSource(id: number, data: Partial<{ enabled: boolean; autoSync: boolean; hiddenNew: boolean }>) {
+    const row = await this.prisma.gitSource.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('监控源不存在');
+    return this.prisma.gitSource.update({ where: { id }, data });
   }
 
   async removeSource(id: number) {
@@ -93,6 +108,7 @@ export class GitSyncService {
           : `https://api.github.com/users/${src.name}/repos?per_page=50&sort=updated`;
       const repos = (await this.ghGet(url)) as GhRepo[];
       let upserted = 0;
+      const hideNew = Boolean(src.hiddenNew);
 
       for (const repo of repos) {
         if (repo.archived) continue;
@@ -117,6 +133,8 @@ export class GitSyncService {
             githubId: String(repo.id),
             sort: 100,
             navOrder: 999,
+            hidden: hideNew,
+            indexed: true,
           },
         });
         upserted += 1;
@@ -153,10 +171,11 @@ export class GitSyncService {
     return results;
   }
 
-  /** 项目自动索引：按关键词/技术栈/来源做简单检索。 */
-  async searchProjects(q?: string, source?: string) {
+  /** 项目自动索引：按关键词/技术栈/来源做简单检索。隐藏项默认不返回。 */
+  async searchProjects(q?: string, source?: string, includeHidden = false) {
     const keyword = (q ?? '').trim();
     const where = {
+      ...(includeHidden ? {} : { hidden: false }),
       ...(source ? { source } : {}),
       ...(keyword
         ? {
@@ -176,6 +195,10 @@ export class GitSyncService {
     });
   }
 
+  async adminListProjects(q?: string, source?: string) {
+    return this.searchProjects(q, source, true);
+  }
+
   listNavProjects() {
     return this.prisma.project.findMany({
       where: { showInNav: true },
@@ -185,7 +208,15 @@ export class GitSyncService {
 
   async setProjectNav(
     id: number,
-    payload: { showInNav?: boolean; navOrder?: number; customHtml?: string; title?: string; description?: string },
+    payload: {
+      showInNav?: boolean;
+      navOrder?: number;
+      customHtml?: string;
+      title?: string;
+      description?: string;
+      hidden?: boolean;
+      indexed?: boolean;
+    },
   ) {
     const row = await this.prisma.project.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('项目不存在');
@@ -197,6 +228,8 @@ export class GitSyncService {
         customHtml: payload.customHtml,
         title: payload.title,
         description: payload.description,
+        hidden: payload.hidden,
+        indexed: payload.indexed,
       },
     });
   }

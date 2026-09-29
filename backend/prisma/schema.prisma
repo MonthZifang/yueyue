@@ -104,6 +104,8 @@ model Project {
   homepage     String?
   customHtml   String?  // 自定义正文（Markdown）
   showInNav    Boolean  @default(true)
+  hidden       Boolean  @default(false) // 前台是否隐藏
+  indexed      Boolean  @default(true)  // 是否参与搜索索引
   navOrder     Int      @default(0)
   gitSourceId  Int?
   gitSource    GitSource? @relation(fields: [gitSourceId], references: [id], onDelete: SetNull)
@@ -116,6 +118,8 @@ model GitSource {
   kind         String    // user | org
   name         String    // GitHub login
   enabled      Boolean   @default(true)
+  autoSync     Boolean   @default(false)
+  hiddenNew    Boolean   @default(false) // 新同步项目默认是否隐藏
   lastSyncedAt DateTime?
   lastError    String?
   createdAt    DateTime  @default(now())

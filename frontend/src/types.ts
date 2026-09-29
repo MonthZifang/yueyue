@@ -69,6 +69,18 @@ export interface FriendLink {
   description?: string | null;
 }
 
+export interface GitSource {
+  id: number;
+  kind: string;
+  name: string;
+  enabled: boolean;
+  autoSync?: boolean;
+  hiddenNew?: boolean;
+  lastSyncedAt?: string | null;
+  lastError?: string | null;
+  _count?: { projects: number };
+}
+
 export interface Project {
   id: number;
   title: string;
@@ -83,16 +95,8 @@ export interface Project {
   customHtml?: string | null;
   showInNav?: boolean;
   navOrder?: number;
-}
-
-export interface GitSource {
-  id: number;
-  kind: string;
-  name: string;
-  enabled: boolean;
-  lastSyncedAt?: string | null;
-  lastError?: string | null;
-  _count?: { projects: number };
+  hidden?: boolean;
+  indexed?: boolean;
 }
 
 export interface AllowHost {
