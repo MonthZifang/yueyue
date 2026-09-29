@@ -248,14 +248,35 @@ export class ContentService {
         tags: true,
       },
     });
-    const groups: Record<string, typeof posts> = {};
+
+    type Item = (typeof posts)[number];
+    const byYear = new Map<string, Map<string, Map<string, Item[]>>>();
     for (const p of posts) {
-      const key = p.publishedAt
-        ? `${p.publishedAt.getFullYear()}-${String(p.publishedAt.getMonth() + 1).padStart(2, '0')}`
-        : '未分类';
-      (groups[key] ||= []).push(p);
+      const d = p.publishedAt ? new Date(p.publishedAt) : null;
+      const y = d ? String(d.getFullYear()) : '未分类';
+      const m = d ? String(d.getMonth() + 1).padStart(2, '0') : '--';
+      const day = d ? String(d.getDate()).padStart(2, '0') : '--';
+      if (!byYear.has(y)) byYear.set(y, new Map());
+      const months = byYear.get(y)!;
+      if (!months.has(m)) months.set(m, new Map());
+      const days = months.get(m)!;
+      if (!days.has(day)) days.set(day, []);
+      days.get(day)!.push(p);
     }
-    return Object.entries(groups).map(([month, items]) => ({ month, items }));
+
+    return [...byYear.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([year, months]) => ({
+        year,
+        months: [...months.entries()]
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .map(([month, days]) => ({
+            month,
+            days: [...days.entries()]
+              .sort((a, b) => b[0].localeCompare(a[0]))
+              .map(([day, items]) => ({ day, items })),
+          })),
+      }));
   }
 
   listGuestbook() {

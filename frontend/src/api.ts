@@ -2,7 +2,7 @@ import axios from 'axios';
 import type {
   About,
   AllowHost,
-  ArchiveGroup,
+  ArchiveYear,
   Comment,
   FriendLink,
   GalleryItem,
@@ -41,7 +41,7 @@ export const api = {
   like: (slug: string, fingerprint: string) =>
     client.post(`/posts/${slug}/like`, { fingerprint }).then((r) => r.data as { likeCount: number; liked: boolean }),
   tags: () => client.get<Tag[]>('/tags').then((r) => r.data),
-  archive: () => client.get<ArchiveGroup[]>('/archive').then((r) => r.data),
+  archive: () => client.get<ArchiveYear[]>('/archive').then((r) => r.data),
   guestbook: () => client.get<GuestbookItem[]>('/guestbook').then((r) => r.data),
   addGuestbook: (content: string) =>
     client.post('/guestbook', { content }).then((r) => r.data),

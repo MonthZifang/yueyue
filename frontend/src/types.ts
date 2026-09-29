@@ -115,7 +115,17 @@ export interface About {
   content: string;
 }
 
-export interface ArchiveGroup {
-  month: string;
+export interface ArchiveDay {
+  day: string;
   items: Pick<Post, 'id' | 'title' | 'slug' | 'summary' | 'publishedAt' | 'tags'>[];
+}
+
+export interface ArchiveMonth {
+  month: string;
+  days: ArchiveDay[];
+}
+
+export interface ArchiveYear {
+  year: string;
+  months: ArchiveMonth[];
 }

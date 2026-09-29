@@ -5,7 +5,6 @@ import Home from './pages/Home';
 import PostList from './pages/PostList';
 import PostDetail from './pages/PostDetail';
 import Tags from './pages/Tags';
-import TagPosts from './pages/TagPosts';
 import Archive from './pages/Archive';
 import About from './pages/About';
 import Projects from './pages/Projects';
@@ -63,7 +62,7 @@ export default function App() {
         <Route path="posts" element={<PostList />} />
         <Route path="posts/:slug" element={<PostDetail />} />
         <Route path="tags" element={<Tags />} />
-        <Route path="tags/:slug" element={<TagPosts />} />
+        <Route path="tags/:slug" element={<Tags />} />
         <Route path="archive" element={<Archive />} />
         <Route path="about" element={<About />} />
         <Route path="projects" element={<Projects />} />
