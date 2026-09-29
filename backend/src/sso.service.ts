@@ -207,9 +207,10 @@ export class SsoService {
     const ssoUserId = profile.user_id || profile.username || `sso-${state.slice(0, 8)}`;
     const username = profile.username || profile.email || ssoUserId;
     const displayName = profile.display_name || username;
-    const avatarUrl = profile.avatar_url || null;
     const email = profile.email || null;
     const isRoot = isRootProfile(profile);
+    // SSO 头像常为相对路径 /uploads/avatars/...，需拼成完整可访问 URL
+    const avatarUrl = this.resolveAvatarUrl(cfg.issuer, profile.avatar_url);
 
     let user = await this.prisma.user.findUnique({
       where: { ssoUserId: String(ssoUserId) },
@@ -265,6 +266,15 @@ export class SsoService {
         sso: true,
       },
     };
+  }
+
+  private resolveAvatarUrl(issuer: string, avatar?: string | null): string | null {
+    if (!avatar || !avatar.trim()) return null;
+    const v = avatar.trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    if (v.startsWith('//')) return `https:${v}`;
+    if (v.startsWith('/')) return `${issuer.replace(/\/$/, '')}${v}`;
+    return `${issuer.replace(/\/$/, '')}/${v}`;
   }
 
   private async fetchProfile(issuer: string, accessToken: string): Promise<SsoProfile> {
