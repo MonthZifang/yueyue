@@ -1,14 +1,20 @@
 ---
 feature: anime-personal-blog
-status: designed
+status: delivered
 updated: 2026-09-29
 branch: main
-commits: 
+commits: 59eeaa3..59eeaa3
 ---
 
 # 二次元个人博客（月月岛）
 
 ## Report
+
+**What was built** — 月月岛科技风格的二次元个人博客 monorepo（`frontend/` + `backend/`）。前端为 React 18 + Vite + TS + Tailwind，清透明亮墨绿视觉，集成品牌 Logo、主视觉 Hero 与 Q 版吉祥物，提供首页、文章列表/详情、标签、归档、关于、项目、画廊、友链、留言板，并支持暗色切换、阅读进度、Markdown 渲染与点赞/评论。后端为 NestJS + Prisma + SQLite + JWT，提供公开内容 API、管理员登录、文章 CRUD、封面上传（扩展名白名单）与种子示例数据。
+
+**Verification** — `npm test -w backend`：7 passed；`npm test -w frontend`：1 passed；`npm run build`：backend + frontend 均成功。独立评审与复审覆盖 T1–T8；4 个 CRITICAL（素材路径 404、上传 XSS、publishedAt 重置、点赞状态）已修复并复审确认 FIXED。
+
+**Journey log** — 1) 品牌素材原始文件名不适合作 URL，统一复制为 `assets/logo.png|hero.png|mascot.png`。2) 上传仅信 client mimetype 会留下 HTML 可执行扩展，改为扩展名白名单。3) 编辑文章若无条件重写 `publishedAt` 会打乱归档，仅在草稿→发布时设置。4) 点赞是 toggle，状态必须按 fingerprint 回传 `liked`，否则二次点击变成取消。5) 评审必抓安全与资源引用，测试优先补公开读写路径。
 
 ## [S1] Problem
 
