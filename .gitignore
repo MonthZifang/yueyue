@@ -1,0 +1,11 @@
+node_modules/
+dist/
+backend/dist/
+frontend/dist/
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+.DS_Store
+*.log
+.worktrees/

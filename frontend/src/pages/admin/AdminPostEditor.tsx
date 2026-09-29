@@ -1,0 +1,130 @@
+import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { api } from '../../api';
+import type { Tag } from '../../types';
+
+export default function AdminPostEditor() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [summary, setSummary] = useState('');
+  const [content, setContent] = useState('');
+  const [cover, setCover] = useState('');
+  const [status, setStatus] = useState('draft');
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagIds, setTagIds] = useState<number[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.tags().then(setTags);
+    if (id) {
+      api.adminListPosts().then((list) => {
+        const p = list.find((x) => x.id === Number(id));
+        if (!p) return;
+        setTitle(p.title);
+        setSlug(p.slug);
+        setSummary(p.summary);
+        setContent(p.content);
+        setCover(p.cover ?? '');
+        setStatus(p.status);
+        setTagIds(p.tags.map((t) => t.id));
+      });
+    }
+  }, [id]);
+
+  async function onUpload(file: File) {
+    const res = await api.adminUpload(file);
+    setCover(res.url);
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    const body = {
+      title,
+      slug,
+      summary,
+      content,
+      cover,
+      status,
+      tagIds,
+    };
+    try {
+      if (id) await api.adminUpdatePost(Number(id), body);
+      else await api.adminCreatePost(body);
+      navigate('/admin/posts');
+    } catch {
+      setError('保存失败，请检查字段');
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="card space-y-4 p-6">
+      <h1 className="font-display text-2xl font-bold">{id ? '编辑文章' : '新建文章'}</h1>
+      <input className="input" placeholder="标题" value={title} onChange={(e) => setTitle(e.target.value)} required />
+      <input className="input" placeholder="slug（URL）" value={slug} onChange={(e) => setSlug(e.target.value)} required />
+      <textarea className="input" placeholder="摘要" value={summary} onChange={(e) => setSummary(e.target.value)} required />
+      <textarea
+        className="input min-h-[240px] font-mono text-sm"
+        placeholder="Markdown 正文"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        required
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          封面
+          <input
+            type="file"
+            accept="image/*"
+            className="mt-2 block w-full text-sm"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onUpload(f);
+            }}
+          />
+        </label>
+        <label className="block text-sm">
+          状态
+          <select className="input mt-2" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="draft">草稿</option>
+            <option value="published">发布</option>
+          </select>
+        </label>
+      </div>
+      {cover && (
+        <img src={cover} alt="封面预览" className="h-40 w-full rounded-2xl object-cover" />
+      )}
+      <div>
+        <div className="mb-2 text-sm">标签</div>
+        <div className="flex flex-wrap gap-2">
+          {tags.map((t) => {
+            const active = tagIds.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={active ? 'btn' : 'btn-ghost'}
+                onClick={() =>
+                  setTagIds((ids) => (active ? ids.filter((x) => x !== t.id) : [...ids, t.id]))
+                }
+              >
+                #{t.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-3">
+        <button type="submit" className="btn">
+          保存
+        </button>
+        <button type="button" className="btn-ghost" onClick={() => navigate('/admin/posts')}>
+          返回
+        </button>
+      </div>
+    </form>
+  );
+}

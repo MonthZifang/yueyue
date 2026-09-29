@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-mist text-ink font-body antialiased;
+}
+
+html.dark body {
+  @apply bg-[#0F1A19] text-[#E7F2EF];
+}
+
+.prose-yue {
+  @apply leading-relaxed text-[15px] sm:text-base;
+}
+
+.prose-yue h1 {
+  @apply mb-4 mt-8 font-display text-2xl font-bold text-teal-deep sm:text-3xl;
+}
+
+html.dark .prose-yue h1 {
+  @apply text-teal-soft;
+}
+
+.prose-yue h2 {
+  @apply mb-3 mt-8 font-display text-xl font-bold text-teal-deep sm:text-2xl;
+}
+
+html.dark .prose-yue h2 {
+  @apply text-teal-soft;
+}
+
+.prose-yue h3 {
+  @apply mb-2 mt-6 font-display text-lg font-bold text-ink;
+}
+
+.prose-yue p {
+  @apply my-4;
+}
+
+.prose-yue a {
+  @apply text-teal underline-offset-2 hover:underline;
+}
+
+.prose-yue blockquote {
+  @apply my-4 border-l-4 border-teal-soft bg-white/70 px-4 py-3 text-ink/80 dark:bg-white/5;
+}
+
+.prose-yue code {
+  @apply rounded bg-teal-soft/80 px-1.5 py-0.5 text-sm text-teal-deep dark:bg-white/10 dark:text-teal-soft;
+}
+
+.prose-yue pre {
+  @apply my-4 overflow-x-auto rounded-xl bg-[#122220] px-4 py-3 text-sm text-[#D8EDE9];
+}
+
+.prose-yue pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.prose-yue ul {
+  @apply my-4 list-disc space-y-1 pl-6;
+}
+
+.prose-yue ol {
+  @apply my-4 list-decimal space-y-1 pl-6;
+}
+
+.prose-yue img {
+  @apply my-4 rounded-2xl shadow-soft;
+}
+
+.card {
+  @apply rounded-3xl bg-white/90 shadow-soft ring-1 ring-teal-soft/60 dark:bg-white/5 dark:ring-white/10;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-full bg-teal px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-deep disabled:opacity-50;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-teal ring-1 ring-teal-soft transition hover:bg-teal-soft/50 dark:text-teal-soft dark:ring-white/15;
+}
+
+.input {
+  @apply w-full rounded-2xl border border-teal-soft/80 bg-white px-4 py-2 text-sm outline-none ring-teal focus:ring-2 dark:border-white/10 dark:bg-white/5;
+}

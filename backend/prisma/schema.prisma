@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int    @id @default(autoincrement())
+  username     String @unique
+  passwordHash String
+  displayName  String
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  slug  String @unique
+  posts Post[]
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  summary     String
+  content     String
+  cover       String?
+  status      String    @default("draft") // draft | published
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tags        Tag[]
+  comments    Comment[]
+  likes       Like[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  nickname  String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id          Int      @id @default(autoincrement())
+  postId      Int
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  fingerprint String
+  createdAt   DateTime @default(now())
+
+  @@unique([postId, fingerprint])
+}
+
+model Guestbook {
+  id        Int      @id @default(autoincrement())
+  nickname  String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model FriendLink {
+  id          Int    @id @default(autoincrement())
+  name        String
+  url         String
+  avatar      String?
+  description String?
+  sort        Int    @default(0)
+}
+
+model Project {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String
+  url         String?
+  techStack   String?
+  cover       String?
+  sort        Int     @default(0)
+}
+
+model GalleryItem {
+  id          Int    @id @default(autoincrement())
+  title       String
+  imageUrl    String
+  description String?
+  sort        Int    @default(0)
+}
+
+model About {
+  id      Int    @id @default(1)
+  title   String
+  content String
+}
