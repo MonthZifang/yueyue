@@ -56,10 +56,7 @@ export default function Archive() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold">归档</h1>
-        <p className="mt-1 text-sm text-ink/60">根据已发布文章自动按年 / 月 / 日生成</p>
-      </div>
+      <h1 className="font-display text-3xl font-bold">归档</h1>
 
       {loading && <div className="card p-8 text-center text-ink/60">加载中…</div>}
 

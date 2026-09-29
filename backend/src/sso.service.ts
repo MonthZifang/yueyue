@@ -72,6 +72,7 @@ export class SsoService {
     const issuer = process.env.SSO_ISSUER?.replace(/\/$/, '');
     const clientId = process.env.SSO_CLIENT_ID ?? '';
     const clientSecret = process.env.SSO_CLIENT_SECRET ?? '';
+    // 业务站点固定 mindustry.wiki:1081；换码进 /api/auth/sso/callback
     const redirectUri =
       process.env.SSO_REDIRECT_URI ??
       'https://mindustry.wiki:1081/api/auth/sso/callback';
@@ -87,7 +88,7 @@ export class SsoService {
     return Boolean(process.env.SSO_ISSUER && process.env.SSO_CLIENT_ID);
   }
 
-  beginLogin(returnTo = '/') {
+  beginLogin(returnTo = '/', hostHint?: string) {
     const cfg = this.config();
     const state = b64url(randomBytes(16));
     const nonce = b64url(randomBytes(16));
@@ -96,11 +97,16 @@ export class SsoService {
     const exp = Date.now() + 10 * 60 * 1000;
     this.pending.set(state, { state, nonce, verifier, exp });
 
+    // 统一回调到 mindustry.wiki:1081（后端换码入口）
+    const redirectUri =
+      process.env.SSO_REDIRECT_URI ??
+      'https://mindustry.wiki:1081/api/auth/sso/callback';
+
     const url = new URL(`${cfg.issuer}/oauth2/authorize`);
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: cfg.clientId,
-      redirect_uri: cfg.redirectUri,
+      redirect_uri: redirectUri,
       scope: 'openid profile email offline_access',
       state,
       nonce,
@@ -108,7 +114,7 @@ export class SsoService {
       code_challenge_method: 'S256',
     });
     url.search = params.toString();
-    return { url: url.toString(), state, returnTo };
+    return { url: url.toString(), state, returnTo, redirectUri };
   }
 
   async callback(code: string, state: string) {
