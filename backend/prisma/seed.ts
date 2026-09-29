@@ -1,17 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash('yueyuedao2026', 10);
-  await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      username: 'admin',
-      passwordHash,
-      displayName: '月月岛管理员',
+  // 不再创建默认本地管理员；登录统一走 SSO，root 由 SSO user_id=0 判定。
+  await prisma.user.deleteMany({
+    where: {
+      OR: [{ username: 'admin' }, { ssoUserId: null }],
     },
   });
 
@@ -126,44 +121,11 @@ model Post {
       },
     });
 
-    if (created.slug === 'welcome-to-yueyuedao') {
-      const commentCount = await prisma.comment.count({ where: { postId: created.id } });
-      if (commentCount === 0) {
-        await prisma.comment.createMany({
-          data: [
-            {
-              postId: created.id,
-              nickname: '路过的旅人',
-              content: '页面好可爱！期待更多文章～',
-            },
-            {
-              postId: created.id,
-              nickname: '白毛控',
-              content: '吉祥物也太萌了吧。',
-            },
-          ],
-        });
-      }
-    }
+    // 不写入测试评论
   }
 
   if ((await prisma.friendLink.count()) === 0) {
-    await prisma.friendLink.createMany({
-      data: [
-        {
-          name: '月月岛科技',
-          url: 'https://yueyuedao.example',
-          description: '官方站点',
-          sort: 1,
-        },
-        {
-          name: '示例友链',
-          url: 'https://example.com',
-          description: '示例站点',
-          sort: 2,
-        },
-      ],
-    });
+    // 友链由后台手动添加，不写测试/示例数据
   }
 
   if ((await prisma.project.count()) === 0) {
@@ -179,6 +141,7 @@ model Post {
         {
           title: '终端小工具集',
           description: '效率向 CLI 合集。',
+          url: 'https://github.com/example/cli-tools',
           techStack: 'Node.js',
           sort: 2,
         },
@@ -211,14 +174,10 @@ model Post {
     });
   }
 
-  if ((await prisma.guestbook.count()) === 0) {
-    await prisma.guestbook.createMany({
-      data: [
-        { nickname: '星野', content: '站点很漂亮，支持一下！' },
-        { nickname: '夜航船', content: '期待技术分享。' },
-      ],
-    });
-  }
+  // 清理测试评论 / 点赞 / 留言
+  await prisma.comment.deleteMany();
+  await prisma.like.deleteMany();
+  await prisma.guestbook.deleteMany();
 
   await prisma.about.upsert({
     where: { id: 1 },
@@ -231,13 +190,41 @@ model Post {
 **月月岛科技 / YUEYUEDAO TECH** 是一个以清透二次元美学为基调的创作与技术品牌。
 
 这里是我的个人博客：写代码、画画、记录喜欢的作品。
-
-## 联系
-
-- 留言板随时欢迎
-- 友链可互换
 `,
     },
+  });
+
+  await prisma.siteSetting.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      heroKicker: 'YUEYUEDAO TECH',
+      heroTitle: '在清透的风与\n墨绿的电路之间',
+      heroSubtitle: '记录代码、二次元与生活的小站。',
+      heroImage: '/assets/hero.png',
+      siteName: '月月岛',
+      footerNote: '以清透的风写代码与梦',
+      aboutTitle: '关于月月岛',
+      commentRequireSso: true,
+    },
+  });
+
+  // 移除画廊中的「林间猫耳」
+  await prisma.galleryItem.deleteMany({
+    where: {
+      OR: [
+        { title: '林间猫耳' },
+        { title: '林间白猫' },
+        { imageUrl: { contains: 'art-cat' } },
+        { imageUrl: { contains: 'art-forest' } },
+      ],
+    },
+  });
+
+  // 移除示例友链
+  await prisma.friendLink.deleteMany({
+    where: { name: { contains: '示例' } },
   });
 }
 

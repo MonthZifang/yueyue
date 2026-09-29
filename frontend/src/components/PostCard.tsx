@@ -30,7 +30,7 @@ export default function PostCard({ post }: { post: Post }) {
         <div className="flex items-center justify-between text-xs text-ink/60 dark:text-white/50">
           <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('zh-CN') : ''}</span>
           <span>
-            {post.commentCount ?? 0} 评论 · {post.likeCount ?? 0} 赞
+            阅读 {post.viewCount ?? 0} · {post.commentCount ?? 0} 评论
           </span>
         </div>
       </div>

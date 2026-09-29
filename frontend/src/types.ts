@@ -1,3 +1,15 @@
+export interface SiteSetting {
+  id: number;
+  heroKicker: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImage: string;
+  siteName: string;
+  footerNote: string;
+  aboutTitle: string;
+  commentRequireSso: boolean;
+}
+
 export interface Tag {
   id: number;
   name: string;
@@ -10,6 +22,17 @@ export interface Comment {
   nickname: string;
   content: string;
   createdAt: string;
+  avatarUrl?: string | null;
+  email?: string | null;
+}
+
+export interface GuestbookItem {
+  id: number;
+  nickname: string;
+  content: string;
+  createdAt: string;
+  avatarUrl?: string | null;
+  email?: string | null;
 }
 
 export interface Post {
@@ -20,6 +43,7 @@ export interface Post {
   content: string;
   cover?: string | null;
   status: string;
+  viewCount?: number;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -37,13 +61,6 @@ export interface Paged<T> {
   pageSize: number;
 }
 
-export interface GuestbookItem {
-  id: number;
-  nickname: string;
-  content: string;
-  createdAt: string;
-}
-
 export interface FriendLink {
   id: number;
   name: string;
@@ -59,6 +76,29 @@ export interface Project {
   url?: string | null;
   techStack?: string | null;
   cover?: string | null;
+  homepage?: string | null;
+  stars?: number;
+  source?: string;
+  fullName?: string | null;
+  customHtml?: string | null;
+  showInNav?: boolean;
+  navOrder?: number;
+}
+
+export interface GitSource {
+  id: number;
+  kind: string;
+  name: string;
+  enabled: boolean;
+  lastSyncedAt?: string | null;
+  lastError?: string | null;
+  _count?: { projects: number };
+}
+
+export interface AllowHost {
+  id: number;
+  host: string;
+  note?: string | null;
 }
 
 export interface GalleryItem {
@@ -66,6 +106,7 @@ export interface GalleryItem {
   title: string;
   imageUrl: string;
   description?: string | null;
+  sort?: number;
 }
 
 export interface About {

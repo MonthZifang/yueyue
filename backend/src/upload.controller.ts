@@ -10,12 +10,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { AuthGuard } from './auth.guard';
+import { RootGuard } from './root.guard';
 
 const ALLOWED_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
 
 @Controller('admin')
-@UseGuards(AuthGuard)
+@UseGuards(RootGuard)
 export class UploadController {
   @Post('upload')
   @UseInterceptors(
@@ -38,7 +38,7 @@ export class UploadController {
     }),
   )
   upload(@UploadedFile() file?: Express.Multer.File) {
-    if (!file) throw new BadRequestException('仅支持 png/jpg/jpeg/webp/gif 图片');
+    if (!file) throw new BadRequestException('仅支�?png/jpg/jpeg/webp/gif 图片');
     return { url: `/uploads/${file.filename}` };
   }
 }

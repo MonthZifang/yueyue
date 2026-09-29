@@ -25,7 +25,15 @@ export class AuthService {
   async me(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, displayName: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        avatarUrl: true,
+        isRoot: true,
+        ssoUserId: true,
+      },
     });
     if (!user) throw new UnauthorizedException();
     return user;

@@ -14,6 +14,7 @@ export default function AdminPostEditor() {
   const [status, setStatus] = useState('draft');
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagIds, setTagIds] = useState<number[]>([]);
+  const [newTag, setNewTag] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -97,7 +98,28 @@ export default function AdminPostEditor() {
         <img src={cover} alt="封面预览" className="h-40 w-full rounded-2xl object-cover" />
       )}
       <div>
-        <div className="mb-2 text-sm">标签</div>
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+          <span>标签</span>
+          <input
+            className="input !w-36 !py-1"
+            placeholder="新标签名"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-ghost !py-1"
+            onClick={async () => {
+              if (!newTag.trim()) return;
+              const t = await api.createTag(newTag.trim());
+              setTags((list) => [...list, t]);
+              setTagIds((ids) => [...ids, t.id]);
+              setNewTag('');
+            }}
+          >
+            + 创建标签
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {tags.map((t) => {
             const active = tagIds.includes(t.id);

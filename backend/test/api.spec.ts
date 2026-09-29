@@ -1,11 +1,14 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/prisma.service';
 
 describe('Blog API', () => {
   let app: INestApplication;
   let token: string;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -13,6 +16,7 @@ describe('Blog API', () => {
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
+    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
@@ -32,10 +36,35 @@ describe('Blog API', () => {
     expect(res.body.title).toContain('欢迎');
   });
 
-  it('POST comment and like work', async () => {
+  it('POST comment requires auth and like works', async () => {
     await request(app.getHttpServer())
       .post('/api/posts/welcome-to-yueyuedao/comments')
-      .send({ nickname: 'tester', content: '来自 supertest 的评论' })
+      .send({ content: '匿名应被拒绝' })
+      .expect(401);
+
+    // 本地登录已停用
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ username: 'admin', password: 'yueyuedao2026' })
+      .expect(403);
+
+    // 构造一个本地测试用户令牌用于互动 API
+    const user = await prisma.user.upsert({
+      where: { username: 'tester' },
+      update: {},
+      create: {
+        username: 'tester',
+        passwordHash: 'x',
+        displayName: 'Tester',
+      },
+    });
+    const jwt = app.get(JwtService);
+    token = await jwt.signAsync({ sub: user.id, username: user.username });
+
+    await request(app.getHttpServer())
+      .post('/api/posts/welcome-to-yueyuedao/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: '来自登录用户的评论' })
       .expect(201);
 
     const like = await request(app.getHttpServer())
@@ -46,30 +75,33 @@ describe('Blog API', () => {
     expect(like.body.likeCount).toBeGreaterThanOrEqual(1);
   });
 
-  it('auth login and admin posts', async () => {
-    const bad = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ username: 'admin', password: 'wrong' })
-      .expect(401);
-    expect(bad.body.message).toBeDefined();
-
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ username: 'admin', password: 'yueyuedao2026' })
-      .expect(201);
-    token = login.body.token;
-    expect(token).toBeTruthy();
-
-    const unauthorized = await request(app.getHttpServer())
+  it('non-root user cannot access admin', async () => {
+    await request(app.getHttpServer())
       .get('/api/admin/posts')
-      .expect(401);
-    expect(unauthorized.status).toBe(401);
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+  });
 
+  it('root user can access admin after promotion', async () => {
+    await prisma.user.updateMany({ data: { isRoot: true } });
     const list = await request(app.getHttpServer())
       .get('/api/admin/posts')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(Array.isArray(list.body)).toBe(true);
+  });
+
+  it('guestbook requires auth', async () => {
+    await request(app.getHttpServer())
+      .post('/api/guestbook')
+      .send({ content: '留言板冒烟测试' })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post('/api/guestbook')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: '留言板冒烟测试' })
+      .expect(201);
   });
 
   it('guestbook, tags, about, archive, friends, projects, gallery are available', async () => {
@@ -80,12 +112,6 @@ describe('Blog API', () => {
     await request(app.getHttpServer()).get('/api/friends').expect(200);
     await request(app.getHttpServer()).get('/api/projects').expect(200);
     await request(app.getHttpServer()).get('/api/gallery').expect(200);
-
-    const post = await request(app.getHttpServer())
-      .post('/api/guestbook')
-      .send({ nickname: 'tester', content: '留言板冒烟测试' })
-      .expect(201);
-    expect(post.body.nickname).toBe('tester');
   });
 
   it('liked state is returned with fingerprint', async () => {
@@ -101,13 +127,9 @@ describe('Blog API', () => {
   });
 
   it('rejects invalid admin post payload', async () => {
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ username: 'admin', password: 'yueyuedao2026' })
-      .expect(201);
     await request(app.getHttpServer())
       .post('/api/admin/posts')
-      .set('Authorization', `Bearer ${login.body.token}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         title: 'x',
         slug: 'welcome-to-yueyuedao',
@@ -116,5 +138,36 @@ describe('Blog API', () => {
         status: 'published',
       })
       .expect(409);
+  });
+
+  it('projects search and nav work', async () => {
+    const nav = await request(app.getHttpServer()).get('/api/projects/nav').expect(200);
+    expect(Array.isArray(nav.body)).toBe(true);
+    const search = await request(app.getHttpServer())
+      .get('/api/projects/search?q=博客')
+      .expect(200);
+    expect(Array.isArray(search.body)).toBe(true);
+  });
+
+  it('admin tools dns rejects bad domain and requires auth', async () => {
+    await request(app.getHttpServer()).get('/api/admin/tools/dns?domain=api.github.com').expect(401);
+
+    await request(app.getHttpServer())
+      .get('/api/admin/tools/dns?domain=not_a_host!!')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+  });
+
+  it('sso status returns enabled flag', async () => {
+    const res = await request(app.getHttpServer()).get('/api/auth/sso/status').expect(200);
+    expect(typeof res.body.enabled).toBe('boolean');
+  });
+
+  it('git sources require root', async () => {
+    await prisma.user.updateMany({ data: { isRoot: false } });
+    await request(app.getHttpServer())
+      .get('/api/admin/git/sources')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
   });
 });

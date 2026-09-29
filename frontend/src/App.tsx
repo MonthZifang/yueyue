@@ -16,7 +16,11 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPosts from './pages/admin/AdminPosts';
 import AdminPostEditor from './pages/admin/AdminPostEditor';
-import { setToken } from './api';
+import AdminGit from './pages/admin/AdminGit';
+import AdminTools from './pages/admin/AdminTools';
+import AdminContent from './pages/admin/AdminContent';
+import SsoCallback from './pages/SsoCallback';
+import { setToken, api } from './api';
 import { useAuth, useTheme } from './store';
 
 function useBootstrap() {
@@ -29,6 +33,23 @@ function useBootstrap() {
 
   useEffect(() => {
     setToken(token);
+    if (!token) return;
+    // 校验会话并同步 isRoot/头像，避免本地残留假登录态
+    api
+      .me()
+      .then((me) => {
+        useAuth.getState().setAuth(token, {
+          username: me.username,
+          displayName: me.displayName,
+          avatarUrl: me.avatarUrl,
+          email: me.email,
+          isRoot: me.isRoot,
+        });
+      })
+      .catch(() => {
+        useAuth.getState().logout();
+        setToken(null);
+      });
   }, [token]);
 }
 
@@ -51,11 +72,15 @@ export default function App() {
         <Route path="guestbook" element={<Guestbook />} />
       </Route>
       <Route path="admin/login" element={<AdminLogin />} />
+      <Route path="auth/sso/callback" element={<SsoCallback />} />
       <Route path="admin" element={<AdminDashboard />}>
         <Route index element={<Navigate to="posts" replace />} />
         <Route path="posts" element={<AdminPosts />} />
         <Route path="posts/new" element={<AdminPostEditor />} />
         <Route path="posts/:id/edit" element={<AdminPostEditor />} />
+        <Route path="content" element={<AdminContent />} />
+        <Route path="git" element={<AdminGit />} />
+        <Route path="tools" element={<AdminTools />} />
       </Route>
     </Routes>
   );

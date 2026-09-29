@@ -12,6 +12,14 @@ model User {
   username     String @unique
   passwordHash String
   displayName  String
+  email        String?
+  avatarUrl    String?
+  ssoUserId    String?  @unique
+  ssoPublicId  Int?
+  isRoot       Boolean @default(false)
+  sessions     UserSession[]
+  guestbook    Guestbook[]
+  comments     Comment[]
 }
 
 model Tag {
@@ -29,6 +37,7 @@ model Post {
   content     String
   cover       String?
   status      String    @default("draft") // draft | published
+  viewCount   Int       @default(0)
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -43,6 +52,10 @@ model Comment {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   nickname  String
   content   String
+  avatarUrl String?
+  email     String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 }
 
@@ -60,6 +73,10 @@ model Guestbook {
   id        Int      @id @default(autoincrement())
   nickname  String
   content   String
+  avatarUrl String?
+  email     String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 }
 
@@ -73,13 +90,63 @@ model FriendLink {
 }
 
 model Project {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String
-  url         String?
-  techStack   String?
-  cover       String?
-  sort        Int     @default(0)
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  url          String?
+  techStack    String?
+  cover        String?
+  sort         Int      @default(0)
+  source       String   @default("manual") // manual | github
+  githubId     String?  @unique
+  fullName     String?
+  stars        Int      @default(0)
+  homepage     String?
+  customHtml   String?  // 自定义正文（Markdown）
+  showInNav    Boolean  @default(true)
+  navOrder     Int      @default(0)
+  gitSourceId  Int?
+  gitSource    GitSource? @relation(fields: [gitSourceId], references: [id], onDelete: SetNull)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+}
+
+model GitSource {
+  id           Int       @id @default(autoincrement())
+  kind         String    // user | org
+  name         String    // GitHub login
+  enabled      Boolean   @default(true)
+  lastSyncedAt DateTime?
+  lastError    String?
+  createdAt    DateTime  @default(now())
+  projects     Project[]
+
+  @@unique([name, kind])
+}
+
+model NavItem {
+  id        Int     @id @default(autoincrement())
+  label     String
+  href      String
+  sort      Int     @default(0)
+  visible   Boolean @default(true)
+  isSystem  Boolean @default(false)
+}
+
+model ProxyAllowHost {
+  id        Int    @id @default(autoincrement())
+  host      String @unique
+  note      String?
+}
+
+model ToolAuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String   // dns | proxy
+  target    String
+  actor     String?
+  ok        Boolean
+  detail    String?
+  createdAt DateTime @default(now())
 }
 
 model GalleryItem {
@@ -94,4 +161,24 @@ model About {
   id      Int    @id @default(1)
   title   String
   content String
+}
+
+model SiteSetting {
+  id          Int    @id @default(1)
+  heroKicker  String @default("YUEYUEDAO TECH")
+  heroTitle   String @default("在清透的风与\n墨绿的电路之间")
+  heroSubtitle String @default("记录代码、二次元与生活的小站。欢迎留言、交换友链。")
+  heroImage   String @default("/assets/hero.png")
+  siteName    String @default("月月岛")
+  footerNote  String @default("以清透的风写代码与梦")
+  aboutTitle  String @default("关于月月岛")
+  commentRequireSso Boolean @default(true)
+}
+
+model UserSession {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   @default("local") // local | sso
+  createdAt    DateTime @default(now())
 }

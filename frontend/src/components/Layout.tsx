@@ -1,6 +1,10 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import ThemeToggle from './ThemeToggle';
+import { api, setToken } from '../api';
+import type { SiteSetting } from '../types';
+import { useAuth } from '../store';
+import { UserAvatar } from './UserAvatar';
 
 const links = [
   { to: '/', label: '首页' },
@@ -14,17 +18,45 @@ const links = [
   { to: '/about', label: '关于' },
 ];
 
+async function startSsoLogin(returnTo: string) {
+  try {
+    const { url } = await api.ssoLogin(returnTo);
+    window.location.href = url;
+  } catch {
+    window.location.href = '/admin/login';
+  }
+}
+
 export default function Layout() {
   const [open, setOpen] = useState(false);
+  const [site, setSite] = useState<SiteSetting | null>(null);
+  const token = useAuth((s) => s.token);
+  const isRoot = useAuth((s) => s.isRoot);
+  const displayName = useAuth((s) => s.displayName) || useAuth((s) => s.username);
+  const avatarUrl = useAuth((s) => s.avatarUrl);
+  const logout = useAuth((s) => s.logout);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    api.site().then(setSite).catch(() => setSite(null));
+  }, []);
+
+  const showAdmin = Boolean(token && isRoot);
+
+  function onLogout() {
+    logout();
+    setToken(null);
+    navigate('/');
+  }
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-teal-soft/50 bg-mist/85 backdrop-blur dark:border-white/10 dark:bg-[#0F1A19]/85">
         <div className="mx-auto flex max-w-[1120px] items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/assets/logo.png" alt="月月岛" className="h-10 w-auto object-contain dark:opacity-90" />
+            <img src="/assets/mascot.png" alt={site?.siteName || '月月岛'} className="h-10 w-10 rounded-full object-cover dark:opacity-90" />
             <span className="hidden font-display text-lg font-bold text-teal-deep sm:block dark:text-teal-soft">
-              月月岛
+              {site?.siteName || '月月岛'}
             </span>
           </Link>
 
@@ -46,13 +78,49 @@ export default function Layout() {
               </NavLink>
             ))}
             <ThemeToggle />
-            <Link to="/admin/login" className="btn-ghost ml-2">
-              后台
-            </Link>
+            {token ? (
+              <div className="ml-2 flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full bg-teal-soft/50 px-2 py-1 dark:bg-white/10">
+                  <UserAvatar src={avatarUrl} name={displayName} size={28} />
+                  <span className="max-w-[8rem] truncate text-sm text-ink/80 dark:text-white/80">
+                    {displayName || '用户'}
+                  </span>
+                </div>
+                <button type="button" className="btn-ghost" onClick={onLogout}>
+                  退出
+                </button>
+                {showAdmin && (
+                  <Link to="/admin/posts" className="btn-ghost">
+                    后台
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn ml-2"
+                onClick={() => startSsoLogin(window.location.pathname + window.location.search)}
+              >
+                登录
+              </button>
+            )}
           </nav>
 
           <div className="flex items-center gap-2 lg:hidden">
             <ThemeToggle />
+            {token ? (
+              <button type="button" className="btn-ghost" onClick={onLogout}>
+                退出
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => startSsoLogin(window.location.pathname + window.location.search)}
+              >
+                登录
+              </button>
+            )}
             <button
               type="button"
               className="btn-ghost"
@@ -77,9 +145,15 @@ export default function Layout() {
                   {l.label}
                 </NavLink>
               ))}
-              <Link to="/admin/login" className="rounded-2xl px-3 py-2 text-sm hover:bg-teal-soft/60" onClick={() => setOpen(false)}>
-                后台
-              </Link>
+              {showAdmin && (
+                <Link
+                  to="/admin/posts"
+                  className="rounded-2xl px-3 py-2 text-sm hover:bg-teal-soft/60"
+                  onClick={() => setOpen(false)}
+                >
+                  后台
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -91,8 +165,13 @@ export default function Layout() {
 
       <footer className="border-t border-teal-soft/50 py-8 text-center text-sm text-ink/70 dark:border-white/10 dark:text-white/60">
         <div className="mx-auto max-w-[1120px]">
-          <div className="mb-2 font-display text-teal dark:text-teal-soft">月月岛科技 · YUEYUEDAO TECH</div>
-          <div>© {new Date().getFullYear()} 月月岛 · 以清透的风写代码与梦</div>
+          <div className="mb-2 font-display text-teal dark:text-teal-soft">
+            月月岛科技 · YUEYUEDAO TECH
+          </div>
+          <div>
+            © {new Date().getFullYear()} {site?.siteName || '月月岛'} ·{' '}
+            {site?.footerNote || '以清透的风写代码与梦'}
+          </div>
         </div>
       </footer>
     </div>

@@ -1,38 +1,47 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import type { Post } from '../types';
+import type { Post, SiteSetting } from '../types';
 import PostCard from '../components/PostCard';
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [site, setSite] = useState<SiteSetting | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    api.site().then(setSite).catch(() => setSite(null));
     api
       .listPosts({ pageSize: 6 })
       .then((d) => setPosts(d.items))
       .finally(() => setLoading(false));
   }, []);
 
+  const titleLines = (site?.heroTitle ?? '在清透的风与\n墨绿的电路之间').split('\n');
+
   return (
     <div className="space-y-12">
       <section className="relative overflow-hidden rounded-[2rem] shadow-soft">
         <img
-          src="/assets/hero.png"
+          src={site?.heroImage || '/assets/hero.png'}
           alt="月月岛主视觉"
           className="h-[320px] w-full object-cover object-top sm:h-[420px]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/40 to-transparent dark:from-[#0F1A19]/90 dark:via-[#0F1A19]/40">
           <div className="flex h-full max-w-xl flex-col justify-center gap-4 px-6 sm:px-10">
-            <p className="text-sm font-medium tracking-[0.25em] text-teal">YUEYUEDAO TECH</p>
+            <p className="text-sm font-medium tracking-[0.25em] text-teal">
+              {site?.heroKicker || 'YUEYUEDAO TECH'}
+            </p>
             <h1 className="font-display text-3xl font-bold leading-snug text-teal-deep sm:text-5xl dark:text-teal-soft">
-              在清透的风与
-              <br />
-              墨绿的电路之间
+              {titleLines.map((line, i) => (
+                <span key={i}>
+                  {line}
+                  {i < titleLines.length - 1 && <br />}
+                </span>
+              ))}
             </h1>
             <p className="max-w-md text-sm text-ink/80 sm:text-base dark:text-white/80">
-              记录代码、二次元与生活的小站。欢迎留言、交换友链。
+              {site?.heroSubtitle || '记录代码、二次元与生活的小站。'}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/posts" className="btn">
@@ -82,7 +91,7 @@ export default function Home() {
         <div>
           <h3 className="font-display text-lg font-bold">来自月月岛的便签</h3>
           <p className="text-sm text-ink/75 dark:text-white/70">
-            站点使用 React + NestJS 构建，文章支持 Markdown、评论与点赞。管理员登录后台即可发布。
+            站点使用 React + NestJS 构建，文章支持 Markdown、评论与点赞。管理员登录后台即可发布与配置首页。
           </p>
         </div>
       </section>

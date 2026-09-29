@@ -1,11 +1,52 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
 const published = { status: 'published' as const };
 
+export interface SiteSettingDto {
+  heroKicker?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImage?: string;
+  siteName?: string;
+  footerNote?: string;
+  aboutTitle?: string;
+  commentRequireSso?: boolean;
+}
+
 @Injectable()
 export class ContentService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async siteSettings() {
+    let row = await this.prisma.siteSetting.findFirst();
+    if (!row) {
+      row = await this.prisma.siteSetting.create({ data: {} });
+    }
+    return row;
+  }
+
+  async updateSiteSettings(dto: SiteSettingDto) {
+    const current = await this.siteSettings();
+    return this.prisma.siteSetting.update({
+      where: { id: current.id },
+      data: {
+        heroKicker: dto.heroKicker,
+        heroTitle: dto.heroTitle,
+        heroSubtitle: dto.heroSubtitle,
+        heroImage: dto.heroImage,
+        siteName: dto.siteName,
+        footerNote: dto.footerNote,
+        aboutTitle: dto.aboutTitle,
+        commentRequireSso: dto.commentRequireSso,
+      },
+    });
+  }
 
   async listPosts(query: { tag?: string; page?: number; pageSize?: number }) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -42,7 +83,7 @@ export class ContentService {
     };
   }
 
-  async getPost(slug: string, fingerprint?: string) {
+  async getPost(slug: string, fingerprint?: string, countView = false) {
     const post = await this.prisma.post.findFirst({
       where: { slug, ...published },
       include: {
@@ -52,6 +93,17 @@ export class ContentService {
       },
     });
     if (!post) throw new NotFoundException('文章不存在');
+
+    let viewCount = post.viewCount;
+    if (countView) {
+      const updated = await this.prisma.post.update({
+        where: { id: post.id },
+        data: { viewCount: { increment: 1 } },
+        select: { viewCount: true },
+      });
+      viewCount = updated.viewCount;
+    }
+
     let liked = false;
     if (fingerprint?.trim()) {
       liked = Boolean(
@@ -64,6 +116,7 @@ export class ContentService {
     }
     return {
       ...post,
+      viewCount,
       likeCount: post._count.likes,
       commentCount: post._count.comments,
       liked,
@@ -80,14 +133,48 @@ export class ContentService {
     });
   }
 
-  async addComment(slug: string, nickname: string, content: string) {
+  async addComment(
+    slug: string,
+    content: string,
+    auth: {
+      sub: number;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string;
+      email?: string;
+    } | null,
+  ) {
+    const settings = await this.siteSettings();
+    if (settings.commentRequireSso && !auth) {
+      throw new UnauthorizedException('请先使用 SSO 统一登录后再评论');
+    }
     const post = await this.prisma.post.findFirst({ where: { slug, ...published } });
     if (!post) throw new NotFoundException('文章不存在');
-    if (!nickname.trim() || !content.trim() || content.length > 500) {
-      throw new BadRequestException('昵称或评论内容不合法');
+    if (!content.trim() || content.length > 500) {
+      throw new BadRequestException('评论内容不合法');
     }
+
+    let nickname = '旅人';
+    let avatarUrl: string | null = null;
+    let email: string | null = null;
+    let userId: number | null = null;
+    if (auth) {
+      userId = auth.sub;
+      const user = await this.prisma.user.findUnique({ where: { id: auth.sub } });
+      nickname = user?.displayName || auth.displayName || auth.username || nickname;
+      avatarUrl = user?.avatarUrl || auth.avatarUrl || null;
+      email = user?.email || auth.email || null;
+    }
+
     return this.prisma.comment.create({
-      data: { postId: post.id, nickname: nickname.trim(), content: content.trim() },
+      data: {
+        postId: post.id,
+        nickname,
+        content: content.trim(),
+        avatarUrl,
+        email,
+        userId,
+      },
     });
   }
 
@@ -123,6 +210,31 @@ export class ContentService {
     return tags.map((t) => ({ id: t.id, name: t.name, slug: t.slug, count: t._count.posts }));
   }
 
+  async allTags() {
+    return this.prisma.tag.findMany({
+      include: { _count: { select: { posts: true } } },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async createTag(name: string, slug?: string) {
+    const cleanName = name.trim();
+    if (!cleanName) throw new BadRequestException('标签名不能为空');
+    const cleanSlug = (slug || cleanName.toLowerCase().replace(/\s+/g, '-')).trim();
+    const exists = await this.prisma.tag.findFirst({
+      where: { OR: [{ name: cleanName }, { slug: cleanSlug }] },
+    });
+    if (exists) throw new BadRequestException('标签已存在');
+    return this.prisma.tag.create({ data: { name: cleanName, slug: cleanSlug } });
+  }
+
+  async deleteTag(id: number) {
+    const row = await this.prisma.tag.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('标签不存在');
+    await this.prisma.tag.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async archive() {
     const posts = await this.prisma.post.findMany({
       where: published,
@@ -150,12 +262,31 @@ export class ContentService {
     return this.prisma.guestbook.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  async addGuestbook(nickname: string, content: string) {
-    if (!nickname.trim() || !content.trim() || content.length > 500) {
-      throw new BadRequestException('昵称或留言内容不合法');
+  async addGuestbook(
+    content: string,
+    auth: {
+      sub: number;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string;
+      email?: string;
+    } | null,
+  ) {
+    if (!auth) {
+      throw new UnauthorizedException('请先使用 SSO 统一登录后再留言');
     }
+    if (!content.trim() || content.length > 500) {
+      throw new BadRequestException('留言内容不合法');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: auth.sub } });
     return this.prisma.guestbook.create({
-      data: { nickname: nickname.trim(), content: content.trim() },
+      data: {
+        nickname: user?.displayName || auth.displayName || auth.username || '旅人',
+        content: content.trim(),
+        avatarUrl: user?.avatarUrl || auth.avatarUrl || null,
+        email: user?.email || auth.email || null,
+        userId: auth.sub,
+      },
     });
   }
 
@@ -163,12 +294,106 @@ export class ContentService {
     return this.prisma.friendLink.findMany({ orderBy: { sort: 'asc' } });
   }
 
+  async createFriend(data: {
+    name: string;
+    url: string;
+    avatar?: string;
+    description?: string;
+    sort?: number;
+  }) {
+    return this.prisma.friendLink.create({
+      data: {
+        name: data.name,
+        url: data.url,
+        avatar: data.avatar,
+        description: data.description,
+        sort: data.sort ?? 0,
+      },
+    });
+  }
+
+  async updateFriend(
+    id: number,
+    data: Partial<{
+      name: string;
+      url: string;
+      avatar: string;
+      description: string;
+      sort: number;
+    }>,
+  ) {
+    const row = await this.prisma.friendLink.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('友链不存在');
+    return this.prisma.friendLink.update({ where: { id }, data });
+  }
+
+  async deleteFriend(id: number) {
+    const row = await this.prisma.friendLink.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('友链不存在');
+    await this.prisma.friendLink.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async projects() {
-    return this.prisma.project.findMany({ orderBy: { sort: 'asc' } });
+    return this.prisma.project.findMany({
+      orderBy: [{ stars: 'desc' }, { sort: 'asc' }],
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        url: true,
+        techStack: true,
+        cover: true,
+        homepage: true,
+        stars: true,
+        source: true,
+        fullName: true,
+        customHtml: true,
+        showInNav: true,
+        navOrder: true,
+      },
+    });
   }
 
   async gallery() {
     return this.prisma.galleryItem.findMany({ orderBy: { sort: 'asc' } });
+  }
+
+  async createGallery(data: {
+    title: string;
+    imageUrl: string;
+    description?: string;
+    sort?: number;
+  }) {
+    return this.prisma.galleryItem.create({
+      data: {
+        title: data.title,
+        imageUrl: data.imageUrl,
+        description: data.description,
+        sort: data.sort ?? 0,
+      },
+    });
+  }
+
+  async updateGallery(
+    id: number,
+    data: Partial<{
+      title: string;
+      imageUrl: string;
+      description: string;
+      sort: number;
+    }>,
+  ) {
+    const row = await this.prisma.galleryItem.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('画廊项不存在');
+    return this.prisma.galleryItem.update({ where: { id }, data });
+  }
+
+  async deleteGallery(id: number) {
+    const row = await this.prisma.galleryItem.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('画廊项不存在');
+    await this.prisma.galleryItem.delete({ where: { id } });
+    return { ok: true };
   }
 
   async about() {
@@ -179,5 +404,30 @@ export class ContentService {
         content: '# 关于\n\n月月岛。',
       }
     );
+  }
+
+  async updateAbout(title: string, content: string) {
+    const current = await this.prisma.about.findFirst();
+    if (current) {
+      return this.prisma.about.update({
+        where: { id: current.id },
+        data: { title, content },
+      });
+    }
+    return this.prisma.about.create({ data: { id: 1, title, content } });
+  }
+
+  async deleteGuestbook(id: number) {
+    const row = await this.prisma.guestbook.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('留言不存在');
+    await this.prisma.guestbook.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async deleteComment(id: number) {
+    const row = await this.prisma.comment.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('评论不存在');
+    await this.prisma.comment.delete({ where: { id } });
+    return { ok: true };
   }
 }
