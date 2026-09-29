@@ -17,6 +17,40 @@ import type {
 
 const client = axios.create({ baseURL: '/api' });
 
+function readPersistedToken(): string | null {
+  try {
+    const raw = localStorage.getItem('yueyuedao-auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { state?: { token?: string | null } };
+    return parsed?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+client.interceptors.request.use((config) => {
+  const token = readPersistedToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+client.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status;
+    const url = String(error?.config?.url || '');
+    if (status === 401 && url.includes('/admin')) {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
+        window.location.href = '/admin/login';
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export function setToken(token: string | null) {
   if (token) client.defaults.headers.common.Authorization = `Bearer ${token}`;
   else delete client.defaults.headers.common.Authorization;

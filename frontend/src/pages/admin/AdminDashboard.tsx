@@ -14,7 +14,26 @@ export default function AdminDashboard() {
       return;
     }
     if (!useAuth.getState().isRoot) {
-      navigate('/', { replace: true });
+      import('../../api')
+        .then(({ api }) => api.me())
+        .then((me) => {
+          if (!me.isRoot) {
+            useAuth.getState().logout();
+            navigate('/', { replace: true });
+          } else {
+            useAuth.getState().setAuth(token, {
+              username: me.username,
+              displayName: me.displayName,
+              avatarUrl: me.avatarUrl,
+              email: me.email,
+              isRoot: true,
+            });
+          }
+        })
+        .catch(() => {
+          useAuth.getState().logout();
+          navigate('/admin/login', { replace: true });
+        });
     }
   }, [token, navigate]);
 
