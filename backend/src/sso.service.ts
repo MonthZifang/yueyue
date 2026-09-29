@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { PrismaService } from './prisma.service';
-import { getSsoConfig, isRootSsoId } from './config';
+import { getSsoConfig, isRootSsoId, loadAppConfig } from './config';
 
 function b64url(buf: Buffer | string): string {
   return Buffer.from(buf)
@@ -17,11 +17,17 @@ function b64url(buf: Buffer | string): string {
     .replace(/=+$/, '');
 }
 
+function b64urlDecode(s: string): Buffer {
+  return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+}
+
 interface SsoConfig {
   issuer: string;
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  postLoginRedirect: string;
+  scopes: string;
 }
 
 export interface SsoProfile {
@@ -34,6 +40,13 @@ export interface SsoProfile {
   public_id?: number | null;
   public_id_hidden?: boolean;
   custom_id?: string;
+}
+
+export interface PendingAuth {
+  state: string;
+  nonce: string;
+  verifier: string;
+  exp: number;
 }
 
 /** root 判定：SSO user_id=0 / public_id=0 / 配置里的 rootUserIds */
@@ -49,17 +62,19 @@ export function isRootProfile(p: {
 @Injectable()
 export class SsoService {
   private readonly logger = new Logger(SsoService.name);
-  private readonly pending = new Map<
-    string,
-    { state: string; nonce: string; verifier: string; exp: number }
-  >();
+  /** 兼容单进程；多 worker 下以签名 Cookie 为准 */
+  private readonly pending = new Map<string, PendingAuth>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
   ) {}
 
-  private config() {
+  private secret(): string {
+    return loadAppConfig().auth.jwtSecret || 'yueyuedao-blog-jwt';
+  }
+
+  private config(): SsoConfig {
     const sso = getSsoConfig();
     if (!sso.issuer || !sso.clientId) {
       throw new BadRequestException(
@@ -83,6 +98,31 @@ export class SsoService {
     return Boolean(sso.enabled && sso.issuer && sso.clientId);
   }
 
+  /** 把 PKCE verifier 等放进签名 Cookie，跨 cluster worker 可用 */
+  signSession(pending: PendingAuth): string {
+    const body = b64url(JSON.stringify(pending));
+    const sig = b64url(createHmac('sha256', this.secret()).update(body).digest());
+    return `${body}.${sig}`;
+  }
+
+  verifySession(raw: string | undefined | null): PendingAuth | null {
+    if (!raw) return null;
+    const [body, sig] = raw.split('.');
+    if (!body || !sig) return null;
+    try {
+      const expected = b64url(createHmac('sha256', this.secret()).update(body).digest());
+      const a = Buffer.from(sig);
+      const b = Buffer.from(expected);
+      if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+      const pending = JSON.parse(b64urlDecode(body).toString('utf8')) as PendingAuth;
+      if (!pending?.state || !pending?.verifier) return null;
+      if (pending.exp < Date.now()) return null;
+      return pending;
+    } catch {
+      return null;
+    }
+  }
+
   beginLogin(returnTo = '/') {
     const cfg = this.config();
     const state = b64url(randomBytes(16));
@@ -90,9 +130,9 @@ export class SsoService {
     const verifier = b64url(randomBytes(32));
     const challenge = b64url(createHash('sha256').update(verifier).digest());
     const exp = Date.now() + 10 * 60 * 1000;
-    this.pending.set(state, { state, nonce, verifier, exp });
+    const pending: PendingAuth = { state, nonce, verifier, exp };
+    this.pending.set(state, pending);
 
-    // 严格使用配置里的 redirectUri（必须是后端 /api/auth/sso/callback）
     const url = new URL(`${cfg.issuer}/oauth2/authorize`);
     const params = new URLSearchParams({
       response_type: 'code',
@@ -105,15 +145,30 @@ export class SsoService {
       code_challenge_method: 'S256',
     });
     url.search = params.toString();
-    return { url: url.toString(), state, returnTo, redirectUri: cfg.redirectUri };
+
+    return {
+      url: url.toString(),
+      state,
+      session: this.signSession(pending),
+      returnTo,
+      redirectUri: cfg.redirectUri,
+    };
   }
 
-  async callback(code: string, state: string) {
+  async callback(code: string, state: string, sessionCookie?: string | null) {
     const cfg = this.config();
-    const saved = this.pending.get(state);
+    // 优先 Cookie（多 worker），其次内存
+    let saved = this.verifySession(sessionCookie);
+    if (!saved || saved.state !== state) {
+      saved = this.pending.get(state) ?? null;
+    }
     this.pending.delete(state);
-    if (!saved) throw new UnauthorizedException('state 无效或已过期');
-    if (saved.exp < Date.now()) throw new UnauthorizedException('state 已过期');
+    if (!saved || saved.state !== state) {
+      throw new UnauthorizedException('state 无效或已过期');
+    }
+    if (saved.exp < Date.now()) {
+      throw new UnauthorizedException('state 已过期');
+    }
     if (!code) throw new BadRequestException('缺少 code');
 
     const body = new URLSearchParams({

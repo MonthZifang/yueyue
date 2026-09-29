@@ -24,19 +24,32 @@ export class SsoController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: { headers: { host?: string } },
   ) {
-    const { url, state, returnTo: to } = this.sso.beginLogin(returnTo || '/');
-    res.cookie('sso_state', state, {
+    const started = this.sso.beginLogin(returnTo || '/');
+    const secure = started.redirectUri.startsWith('https://');
+    // 签名 Cookie 携带 state/verifier，多 worker 下回调仍可校验
+    res.cookie('sso_oauth', started.session, {
       httpOnly: true,
       sameSite: 'lax',
+      secure,
+      maxAge: 10 * 60 * 1000,
+      path: '/',
+    });
+    res.cookie('sso_state', started.state, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
       maxAge: 10 * 60 * 1000,
     });
-    res.cookie('sso_return', to, {
+    res.cookie('sso_return', started.returnTo, {
       httpOnly: false,
       sameSite: 'lax',
+      secure,
       maxAge: 10 * 60 * 1000,
     });
-    // 方便排查：把实际使用的 redirect_uri 一并返回
-    return { url, redirectUri: getSsoConfig().redirectUri };
+    return {
+      url: started.url,
+      redirectUri: started.redirectUri,
+    };
   }
 
   @Get('callback')
@@ -45,9 +58,10 @@ export class SsoController {
     @Query('state') state: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.sso.callback(code ?? '', state ?? '');
-    const returnPath =
-      (res.req.cookies?.sso_return as string | undefined) || '/';
+    const cookie = res.req.cookies as Record<string, string | undefined>;
+    const session = cookie?.sso_oauth;
+    const result = await this.sso.callback(code ?? '', state ?? '', session);
+    const returnPath = cookie?.sso_return || '/';
     const app = loadAppConfig();
     const target = new URL(
       app.sso.postLoginRedirect || `${app.site.origin}/auth/sso/callback`,
@@ -55,6 +69,7 @@ export class SsoController {
     target.searchParams.set('token', result.token);
     target.searchParams.set('username', result.user.username);
     target.searchParams.set('returnTo', returnPath);
+    res.clearCookie('sso_oauth');
     res.clearCookie('sso_state');
     res.clearCookie('sso_return');
     res.redirect(target.toString());
