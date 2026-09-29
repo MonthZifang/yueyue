@@ -106,6 +106,7 @@ model Project {
   customTitle  String?  // 替换显示名称
   customSummary String? // 替换简介
   customHtml   String?  // 卡片 Markdown 内容
+  bgImage      String?  // 详情页背景图
   showInNav    Boolean  @default(true)
   hidden       Boolean  @default(false) // 前台是否隐藏
   indexed      Boolean  @default(true)  // 是否参与搜索索引

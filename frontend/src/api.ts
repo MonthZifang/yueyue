@@ -112,6 +112,8 @@ export const api = {
     client
       .get<{ url: string }>('/auth/sso/login', { params: returnTo ? { returnTo } : undefined })
       .then((r) => r.data),
+  getProject: (id: number) =>
+    client.get<Project>('/projects/detail/' + id).then((r) => r.data),
   searchProjects: (q?: string, source?: string) =>
     client.get<Project[]>('/projects/search', { params: { q, source } }).then((r) => r.data),
   navProjects: () => client.get<Project[]>('/projects/nav').then((r) => r.data),

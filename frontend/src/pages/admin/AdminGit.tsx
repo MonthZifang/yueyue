@@ -14,6 +14,7 @@ export default function AdminGit() {
   const [custom, setCustom] = useState('');
   const [customTitle, setCustomTitle] = useState('');
   const [customSummary, setCustomSummary] = useState('');
+  const [bgImage, setBgImage] = useState('');
   const [selected, setSelected] = useState<Project | null>(null);
   const [filter, setFilter] = useState<'all' | 'hidden' | 'visible' | 'github' | 'manual'>('all');
 
@@ -70,6 +71,7 @@ export default function AdminGit() {
       customHtml: custom,
       customTitle: customTitle || null,
       customSummary: customSummary || null,
+      bgImage: bgImage || null,
       title: p.title,
       description: p.description,
     });
@@ -285,6 +287,18 @@ export default function AdminGit() {
                   <div className="grid gap-2 sm:grid-cols-2">
                     <input className="input" placeholder="替换显示名称（可选）" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} />
                     <input className="input" placeholder="替换简介（可选）" value={customSummary} onChange={(e) => setCustomSummary(e.target.value)} />
+                    <div className="flex items-center gap-2">
+                      <input className="input" placeholder="背景图 URL" value={bgImage} onChange={(e) => setBgImage(e.target.value)} />
+                      <label className="btn-ghost cursor-pointer whitespace-nowrap">
+                        上传背景
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const up = await api.adminUpload(file);
+                          setBgImage(up.url);
+                        }} />
+                      </label>
+                    </div>
                   </div>
                   <textarea
                     className="input min-h-[120px] font-mono text-sm"

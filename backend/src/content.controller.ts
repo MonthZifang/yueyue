@@ -173,6 +173,11 @@ export class ContentController {
     return this.content.friends();
   }
 
+  @Get('projects/detail/:id')
+  getProjectById(@Param('id', ParseIntPipe) id: number) {
+    return this.content.getProjectById(id);
+  }
+
   @Get('projects')
   projects() {
     return this.content.projects();

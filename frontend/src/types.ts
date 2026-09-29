@@ -95,6 +95,7 @@ export interface Project {
   customHtml?: string | null;
   customTitle?: string | null;
   customSummary?: string | null;
+  bgImage?: string | null;
   showInNav?: boolean;
   navOrder?: number;
   hidden?: boolean;

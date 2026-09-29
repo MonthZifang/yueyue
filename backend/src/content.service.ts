@@ -421,10 +421,19 @@ export class ContentService {
         source: true,
         fullName: true,
         customHtml: true,
+        bgImage: true,
         showInNav: true,
         navOrder: true,
       },
     });
+  }
+
+  async getProjectById(id: number) {
+    const row = await this.prisma.project.findFirst({
+      where: { id, hidden: false },
+    });
+    if (!row) throw new NotFoundException('项目不存在');
+    return row;
   }
 
   async gallery(includeHidden = false) {
