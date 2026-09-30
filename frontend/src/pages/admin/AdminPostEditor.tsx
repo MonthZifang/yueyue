@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import type { Tag } from '../../types';
 
@@ -82,18 +82,34 @@ export default function AdminPostEditor() {
         required
       />
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">
-          封面
-          <input
-            type="file"
-            accept="image/*"
-            className="mt-2 block w-full text-sm"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onUpload(f);
-            }}
-          />
-        </label>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">
+            封面（图片 ID / 路径）
+            <input
+              className="input mt-2"
+              placeholder="例如 3 或 /api/media/3 或 /uploads/xx.png"
+              value={cover}
+              onChange={(e) => setCover(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="btn-ghost cursor-pointer">
+              上传新图
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void onUpload(f);
+                }}
+              />
+            </label>
+            <Link to="/admin/media" className="btn-ghost">
+              打开图片库
+            </Link>
+          </div>
+        </div>
         <label className="block text-sm">
           状态
           <select className="input mt-2" value={status} onChange={(e) => setStatus(e.target.value)}>
