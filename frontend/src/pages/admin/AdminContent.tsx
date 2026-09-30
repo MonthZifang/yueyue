@@ -15,6 +15,11 @@ export default function AdminContent() {
   const [aboutContent, setAboutContent] = useState('');
   const [msg, setMsg] = useState('');
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+  const [groupKinds, setGroupKinds] = useState<{ value: string; label: string }[]>([]);
+
+  function setKindAt(i: number, key: "value" | "label", v: string) {
+    setGroupKinds((list) => list.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
+  }
 
   const filteredGallery = gallery.filter((g) => {
     if (galleryFilter === 'hidden') return g.hidden;
@@ -22,8 +27,18 @@ export default function AdminContent() {
     return true;
   });
 
+  function parseKindsJson(json?: string) {
+    try {
+      const arr = JSON.parse(json || '[]');
+      if (Array.isArray(arr)) {
+        return arr.map((x) => ({ value: String(x.value), label: String(x.label) }));
+      }
+    } catch { /* */ }
+    return [];
+  }
+
   function load() {
-    api.adminSite().then(setSite);
+    api.adminSite().then((s) => { setSite(s); setGroupKinds(parseKindsJson(s.groupKindsJson)); }).catch(() => undefined);
     api.adminTags().then(setTags);
     api.adminFriends().then(setFriends);
     api.adminGallery().then(setGallery);
@@ -45,7 +60,11 @@ export default function AdminContent() {
       const up = await api.adminUpload(heroImageFile);
       heroImage = up.url;
     }
-    await api.updateSite({ ...site, heroImage });
+    await api.updateSite({
+      ...site,
+      heroImage,
+      groupKindsJson: JSON.stringify(groupKinds),
+    });
     setMsg('首页配置已保存');
     load();
   }
@@ -115,73 +134,162 @@ export default function AdminContent() {
       </div>
 
       {tab === 'site' && site && (
-        <form onSubmit={saveSite} className="card space-y-3 p-6">
-          <label className="block text-sm">
-            站点名称
-            <input className="input mt-1" value={site.siteName} onChange={(e) => setSite({ ...site, siteName: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            Hero 英文眉题
-            <input className="input mt-1" value={site.heroKicker} onChange={(e) => setSite({ ...site, heroKicker: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            Hero 标题（用换行分行）
-            <textarea className="input mt-1 min-h-[80px]" value={site.heroTitle} onChange={(e) => setSite({ ...site, heroTitle: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            Hero 副文案
-            <textarea className="input mt-1 min-h-[80px]" value={site.heroSubtitle} onChange={(e) => setSite({ ...site, heroSubtitle: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            Hero 图片 URL
-            <input className="input mt-1" value={site.heroImage} onChange={(e) => setSite({ ...site, heroImage: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            或上传新的 Hero 图
-            <input type="file" accept="image/*" className="mt-1 block w-full text-sm" onChange={(e) => setHeroImageFile(e.target.files?.[0] ?? null)} />
-          </label>
-          <label className="block text-sm">
-            页脚文案
-            <input className="input mt-1" value={site.footerNote} onChange={(e) => setSite({ ...site, footerNote: e.target.value })} />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={site.commentRequireSso}
-              onChange={(e) => setSite({ ...site, commentRequireSso: e.target.checked })}
-            />
-            评论需要 SSO 统一登录
-          </label>
-          <button type="submit" className="btn">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={Boolean(site.viewUniqueMode)}
-              onChange={(e) => setSite({ ...site, viewUniqueMode: e.target.checked })}
-            />
-            阅读去重（关掉 = 每次点击 +1）
-          </label>
-          <label className="block text-sm">
-            组页面标题
-            <input className="input mt-1" value={site.groupsTitle ?? ''} onChange={(e) => setSite({ ...site, groupsTitle: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            组页面副标题
-            <input className="input mt-1" value={site.groupsSubtitle ?? ''} onChange={(e) => setSite({ ...site, groupsSubtitle: e.target.value })} />
-          </label>
-          <label className="block text-sm">
-            组类型标签（JSON 数组：value 与 label，例如 QQ 群 / Steam / Git 组织）
-            <textarea
-              className="input mt-1 min-h-[80px] font-mono text-xs"
-              value={site.groupKindsJson ?? ''}
-              onChange={(e) => setSite({ ...site, groupKindsJson: e.target.value })}
-            />
-          </label>
-            保存首页配置
+        <form onSubmit={saveSite} className="space-y-6">
+          <section className="card space-y-4 p-6">
+            <h2 className="font-display text-lg font-bold">站点</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">
+                站点名称
+                <input
+                  className="input mt-1"
+                  value={site.siteName}
+                  onChange={(e) => setSite({ ...site, siteName: e.target.value })}
+                />
+              </label>
+              <label className="block text-sm">
+                页脚文案
+                <input
+                  className="input mt-1"
+                  value={site.footerNote}
+                  onChange={(e) => setSite({ ...site, footerNote: e.target.value })}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="card space-y-4 p-6">
+            <h2 className="font-display text-lg font-bold">首页 Hero</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">
+                英文眉题
+                <input
+                  className="input mt-1"
+                  value={site.heroKicker}
+                  onChange={(e) => setSite({ ...site, heroKicker: e.target.value })}
+                />
+              </label>
+              <label className="block text-sm">
+                背景图 URL
+                <input
+                  className="input mt-1"
+                  value={site.heroImage}
+                  onChange={(e) => setSite({ ...site, heroImage: e.target.value })}
+                />
+              </label>
+            </div>
+            <label className="block text-sm">
+              主标题（换行 = 分行）
+              <textarea
+                className="input mt-1 min-h-[72px]"
+                value={site.heroTitle}
+                onChange={(e) => setSite({ ...site, heroTitle: e.target.value })}
+              />
+            </label>
+            <label className="block text-sm">
+              副文案
+              <textarea
+                className="input mt-1 min-h-[72px]"
+                value={site.heroSubtitle}
+                onChange={(e) => setSite({ ...site, heroSubtitle: e.target.value })}
+              />
+            </label>
+            <label className="block text-sm">
+              上传新背景图
+              <input
+                type="file"
+                accept="image/*"
+                className="mt-1 block w-full text-sm"
+                onChange={(e) => setHeroImageFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </section>
+
+          <section className="card space-y-4 p-6">
+            <h2 className="font-display text-lg font-bold">互动</h2>
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={site.commentRequireSso}
+                  onChange={(e) => setSite({ ...site, commentRequireSso: e.target.checked })}
+                />
+                评论 / 留言需要登录
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={Boolean(site.viewUniqueMode)}
+                  onChange={(e) => setSite({ ...site, viewUniqueMode: e.target.checked })}
+                />
+                阅读去重（不勾选 = 每次点击 +1）
+              </label>
+            </div>
+          </section>
+
+          <section className="card space-y-4 p-6">
+            <h2 className="font-display text-lg font-bold">组页面</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">
+                标题
+                <input
+                  className="input mt-1"
+                  value={site.groupsTitle ?? ''}
+                  onChange={(e) => setSite({ ...site, groupsTitle: e.target.value })}
+                />
+              </label>
+              <label className="block text-sm">
+                副标题
+                <input
+                  className="input mt-1"
+                  value={site.groupsSubtitle ?? ''}
+                  onChange={(e) => setSite({ ...site, groupsSubtitle: e.target.value })}
+                />
+              </label>
+            </div>
+            <div>
+              <div className="mb-2 text-sm font-medium">类型标签</div>
+              <div className="mb-2 flex flex-wrap gap-2">
+                {groupKinds.map((k, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-2 rounded-full bg-teal-soft/70 px-3 py-1 text-sm dark:bg-white/10"
+                  >
+                    <input
+                      className="w-20 bg-transparent text-xs outline-none"
+                      value={k.value}
+                      onChange={(e) => setKindAt(i, 'value', e.target.value)}
+                      title="内部标识"
+                    />
+                    <input
+                      className="w-24 bg-transparent outline-none"
+                      value={k.label}
+                      onChange={(e) => setKindAt(i, 'label', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="text-red-600"
+                      onClick={() => setGroupKinds((list) => list.filter((_, j) => j !== i))}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setGroupKinds((list) => [...list, { value: 'new', label: '新类型' }])}
+              >
+                + 添加类型
+              </button>
+            </div>
+          </section>
+
+          <button type="submit" className="btn w-full sm:w-auto">
+            保存配置
           </button>
         </form>
       )}
-
       {tab === 'tags' && (
         <div className="card space-y-4 p-6">
           <form onSubmit={addTag} className="flex flex-wrap gap-2">
