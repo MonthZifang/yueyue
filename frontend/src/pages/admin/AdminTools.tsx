@@ -38,6 +38,7 @@ export default function AdminTools() {
   const [host, setHost] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
   const [audit, setAudit] = useState<
     { id: number; action: string; target: string; ok: boolean; createdAt: string }[]
   >([]);
@@ -113,6 +114,7 @@ export default function AdminTools() {
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-bold">网络工具</h1>
       {error && <div className="card px-4 py-2 text-sm text-red-600">{error}</div>}
+      {msg && <div className="card px-4 py-2 text-sm text-teal">{msg}</div>}
 
       <section className="card space-y-3 p-6">
         <h2 className="font-display text-lg font-bold">DNS 解析（可自定义 DNS）</h2>
@@ -257,7 +259,20 @@ export default function AdminTools() {
       </section>
 
       <section className="card space-y-2 p-6">
-        <h2 className="font-display text-lg font-bold">阅读统计（独立访客）</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">阅读统计（独立访客）</h2>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={async () => {
+              await api.syncAvatars();
+              setMsg('已同步用户头像到历史留言/评论');
+              load();
+            }}
+          >
+            同步用户头像到历史消息
+          </button>
+        </div>
         <div className="space-y-1 text-sm">
           {views.map((v) => (
             <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-mist px-3 py-2 dark:bg-white/5">

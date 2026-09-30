@@ -29,6 +29,13 @@ export class AuthController {
     return this.auth.me(req.user.sub);
   }
 
+  @Post('sync-avatars')
+  @UseGuards(AuthGuard)
+  async syncAvatars() {
+    // 需要 root：复用 AuthService 注入 SsoService 不方便，直接调用服务
+    return this.auth.syncAvatars();
+  }
+
   @Get('access')
   @UseGuards(AuthGuard)
   async access(@Req() req: { user: { sub: number } }) {

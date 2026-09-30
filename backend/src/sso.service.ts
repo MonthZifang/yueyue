@@ -245,6 +245,11 @@ export class SsoService {
       });
     }
 
+    // 头像/昵称变更后，同步到历史评论与留言
+    if (user.id) {
+      await this.syncUserAvatarToContent(user.id, user.displayName, user.avatarUrl);
+    }
+
     const jwt = await this.jwt.signAsync({
       sub: user.id,
       username: user.username,
@@ -277,6 +282,44 @@ export class SsoService {
     return `${issuer.replace(/\/$/, '')}/${v}`;
   }
 
+
+  /** 用户头像/昵称更新后，写回历史评论、留言、项目评论 */
+  /** 后台：把所有用户当前头像/昵称刷到历史内容 */
+  async syncAllAvatarsToContent() {
+    const users = await this.prisma.user.findMany({
+      select: { id: true, displayName: true, avatarUrl: true },
+    });
+    let updated = 0;
+    for (const u of users) {
+      await this.syncUserAvatarToContent(u.id, u.displayName, u.avatarUrl);
+      updated += 1;
+    }
+    return { ok: true, users: updated };
+  }
+  async syncUserAvatarToContent(userId: number, displayName: string | null, avatarUrl: string | null) {
+    const nickname = displayName || undefined;
+    await this.prisma.comment.updateMany({
+      where: { userId },
+      data: {
+        ...(avatarUrl ? { avatarUrl } : {}),
+        ...(nickname ? { nickname } : {}),
+      },
+    });
+    await this.prisma.guestbook.updateMany({
+      where: { userId },
+      data: {
+        ...(avatarUrl ? { avatarUrl } : {}),
+        ...(nickname ? { nickname } : {}),
+      },
+    });
+    await this.prisma.projectComment.updateMany({
+      where: { userId },
+      data: {
+        ...(avatarUrl ? { avatarUrl } : {}),
+        ...(nickname ? { nickname } : {}),
+      },
+    });
+  }
   private async fetchProfile(issuer: string, accessToken: string): Promise<SsoProfile> {
     const empty: SsoProfile = {
       user_id: '',

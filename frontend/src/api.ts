@@ -162,6 +162,7 @@ export const api = {
     client.post(`/admin/tools/proxy/profiles/${id}`, body).then((r) => r.data),
   deleteProxyProfile: (id: number) =>
     client.delete(`/admin/tools/proxy/profiles/${id}`).then((r) => r.data),
+  syncAvatars: () => client.post('/auth/sync-avatars').then((r) => r.data),
   viewStats: () => client.get('/admin/views').then((r) => r.data),
   resetViews: (postId: number) =>
     client.post(`/admin/views/${postId}/reset`).then((r) => r.data),
