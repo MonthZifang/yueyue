@@ -53,6 +53,26 @@ async function startWorker() {
 
   const uploads = join(process.cwd(), 'uploads');
   expressApp.use('/uploads', express.static(uploads));
+  // /uploads/* 从数据库读媒体（兼容旧 URL）
+  const { PrismaClient } = await import('@prisma/client');
+  const mediaDb = new PrismaClient();
+  expressApp.get('/uploads/:filename', async (req: { params: { filename: string } }, res: { setHeader: (k: string, v: string) => void; send: (b: Buffer) => void; status: (c: number) => { end: () => void } }, next: () => void) => {
+    try {
+      const row = await mediaDb.media.findUnique({
+        where: { filename: req.params.filename },
+      });
+      if (!row) {
+        next();
+        return;
+      }
+      res.setHeader('Content-Type', row.mime);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.send(Buffer.from(row.data));
+    } catch {
+      next();
+    }
+  });
+
 
   const assets = join(process.cwd(), '..', 'assets');
   expressApp.use('/assets', express.static(assets));
