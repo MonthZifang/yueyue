@@ -12,6 +12,8 @@ export default function PostList() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [searchQ, setSearchQ] = useState('');
+  const [q, setQ] = useState('');
   const pageSize = 6;
 
   useEffect(() => {
@@ -25,13 +27,13 @@ export default function PostList() {
   useEffect(() => {
     setLoading(true);
     api
-      .listPosts({ page, pageSize, tag: tag || undefined })
+      .listPosts({ page, pageSize, tag: tag || undefined, q: q || undefined })
       .then((d) => {
         setItems(d.items);
         setTotal(d.total);
       })
       .finally(() => setLoading(false));
-  }, [page, tag]);
+  }, [page, tag, q]);
 
   const pages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -43,6 +45,27 @@ export default function PostList() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl font-bold">文章</h1>
+        <div className="flex flex-wrap gap-2">
+          <input
+            className="input !w-56"
+            placeholder="搜索标题 / 内容"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setPage(1);
+                setQ(searchQ.trim());
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="btn"
+            onClick={() => { setPage(1); setQ(searchQ.trim()); }}
+          >
+            搜索
+          </button>
+        </div>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={tag === '' ? 'btn' : 'btn-ghost'} onClick={() => selectTag('')}>
           全部

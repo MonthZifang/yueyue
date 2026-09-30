@@ -48,13 +48,23 @@ export class ContentService {
     });
   }
 
-  async listPosts(query: { tag?: string; page?: number; pageSize?: number }) {
+  async listPosts(query: { tag?: string; page?: number; pageSize?: number; q?: string }) {
     const page = Math.max(1, Number(query.page) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(query.pageSize) || 10));
+    const keyword = (query.q ?? '').trim();
     const where = {
       ...published,
       ...(query.tag
         ? { tags: { some: { slug: query.tag } } }
+        : {}),
+      ...(keyword
+        ? {
+            OR: [
+              { title: { contains: keyword } },
+              { summary: { contains: keyword } },
+              { content: { contains: keyword } },
+            ],
+          }
         : {}),
     };
     const [total, items] = await Promise.all([
@@ -95,31 +105,21 @@ export class ContentService {
     if (!post) throw new NotFoundException('文章不存在');
 
     let viewCount = post.viewCount;
-    if (countView && fingerprint?.trim()) {
-      // 同一 fingerprint 只计 1 次阅读
-      const fp = fingerprint.trim();
-      const exists = await this.prisma.postView.findUnique({
-        where: { postId_fingerprint: { postId: post.id, fingerprint: fp } },
-      });
-      if (!exists) {
-        await this.prisma.postView.create({
-          data: { postId: post.id, fingerprint: fp },
-        });
-        const updated = await this.prisma.post.update({
-          where: { id: post.id },
-          data: { viewCount: { increment: 1 } },
-          select: { viewCount: true },
-        });
-        viewCount = updated.viewCount;
-      }
-    } else if (countView) {
-      // 无 fingerprint 时仍计一次，避免完全丢数
+    if (countView) {
+      // 每点击一次 +1
       const updated = await this.prisma.post.update({
         where: { id: post.id },
         data: { viewCount: { increment: 1 } },
         select: { viewCount: true },
       });
       viewCount = updated.viewCount;
+      if (fingerprint?.trim()) {
+        await this.prisma.postView
+          .create({
+            data: { postId: post.id, fingerprint: fingerprint.trim() },
+          })
+          .catch(() => undefined);
+      }
     }
 
     let liked = false;
@@ -515,6 +515,110 @@ export class ContentService {
     const row = await this.prisma.comment.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('评论不存在');
     await this.prisma.comment.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async getProjectDetail(id: number, fingerprint?: string, countView = false) {
+    const project = await this.prisma.project.findFirst({
+      where: { id, hidden: false },
+      include: {
+        comments: { orderBy: { createdAt: 'desc' } },
+        _count: { select: { likes: true, comments: true } },
+      },
+    });
+    if (!project) throw new NotFoundException('项目不存在');
+
+    let viewCount = project.viewCount;
+    if (countView) {
+      const updated = await this.prisma.project.update({
+        where: { id: project.id },
+        data: { viewCount: { increment: 1 } },
+        select: { viewCount: true },
+      });
+      viewCount = updated.viewCount;
+      if (fingerprint?.trim()) {
+        await this.prisma.projectView
+          .create({ data: { projectId: project.id, fingerprint: fingerprint.trim() } })
+          .catch(() => undefined);
+      }
+    }
+
+    let liked = false;
+    if (fingerprint?.trim()) {
+      liked = Boolean(
+        await this.prisma.projectLike.findUnique({
+          where: {
+            projectId_fingerprint: {
+              projectId: project.id,
+              fingerprint: fingerprint.trim(),
+            },
+          },
+        }),
+      );
+    }
+
+    return {
+      ...project,
+      viewCount,
+      likeCount: project._count.likes,
+      commentCount: project._count.comments,
+      liked,
+      _count: undefined,
+    };
+  }
+
+  async likeProject(id: number, fingerprint: string) {
+    const project = await this.prisma.project.findFirst({ where: { id, hidden: false } });
+    if (!project) throw new NotFoundException('项目不存在');
+    if (!fingerprint?.trim()) throw new BadRequestException('缺少 fingerprint');
+    const fp = fingerprint.trim();
+    const existing = await this.prisma.projectLike.findUnique({
+      where: { projectId_fingerprint: { projectId: id, fingerprint: fp } },
+    });
+    if (existing) {
+      await this.prisma.projectLike.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.projectLike.create({ data: { projectId: id, fingerprint: fp } });
+    }
+    const likeCount = await this.prisma.projectLike.count({ where: { projectId: id } });
+    return { likeCount, liked: !existing };
+  }
+
+  async addProjectComment(
+    projectId: number,
+    content: string,
+    auth: {
+      sub: number;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string;
+      email?: string;
+    } | null,
+  ) {
+    if (!auth) throw new UnauthorizedException('请先登录后再评论');
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, hidden: false },
+    });
+    if (!project) throw new NotFoundException('项目不存在');
+    if (!content.trim() || content.length > 500) {
+      throw new BadRequestException('评论内容不合法');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: auth.sub } });
+    return this.prisma.projectComment.create({
+      data: {
+        projectId,
+        nickname: user?.displayName || auth.displayName || auth.username || '旅人',
+        content: content.trim(),
+        avatarUrl: user?.avatarUrl || auth.avatarUrl || null,
+        userId: auth.sub,
+      },
+    });
+  }
+
+  async deleteProjectComment(id: number) {
+    const row = await this.prisma.projectComment.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('评论不存在');
+    await this.prisma.projectComment.delete({ where: { id } });
     return { ok: true };
   }
 }

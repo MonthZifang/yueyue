@@ -57,7 +57,7 @@ export function setToken(token: string | null) {
 }
 
 export const api = {
-  listPosts: (params?: { tag?: string; page?: number; pageSize?: number }) =>
+  listPosts: (params?: { tag?: string; page?: number; pageSize?: number; q?: string }) =>
     client.get<Paged<Post>>('/posts', { params }).then((r) => r.data),
   getPost: (slug: string, fingerprint?: string, countView?: boolean) =>
     client
@@ -112,8 +112,12 @@ export const api = {
     client
       .get<{ url: string }>('/auth/sso/login', { params: returnTo ? { returnTo } : undefined })
       .then((r) => r.data),
-  getProject: (id: number) =>
-    client.get<Project>('/projects/detail/' + id).then((r) => r.data),
+  getProject: (id: number, fingerprint?: string, countView?: boolean) =>
+    client.get<Project>('/projects/detail/' + id, { params: { fingerprint, view: countView ? 1 : undefined } }).then((r) => r.data),
+  likeProject: (id: number, fingerprint: string) =>
+    client.post('/projects/' + id + '/like', { fingerprint }).then((r) => r.data),
+  addProjectComment: (id: number, content: string) =>
+    client.post('/projects/' + id + '/comments', { content }).then((r) => r.data),
   searchProjects: (q?: string, source?: string) =>
     client.get<Project[]>('/projects/search', { params: { q, source } }).then((r) => r.data),
   navProjects: () => client.get<Project[]>('/projects/nav').then((r) => r.data),

@@ -100,6 +100,11 @@ export interface Project {
   navOrder?: number;
   hidden?: boolean;
   indexed?: boolean;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+  liked?: boolean;
+  comments?: Comment[];
 }
 
 export interface AllowHost {

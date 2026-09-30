@@ -101,8 +101,9 @@ export class ContentController {
     @Query('tag') tag?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
   ) {
-    return this.content.listPosts({ tag, page: Number(page), pageSize: Number(pageSize) });
+    return this.content.listPosts({ tag, page: Number(page), pageSize: Number(pageSize), q });
   }
 
   @Get('posts/:slug')
@@ -174,8 +175,42 @@ export class ContentController {
   }
 
   @Get('projects/detail/:id')
-  getProjectById(@Param('id', ParseIntPipe) id: number) {
-    return this.content.getProjectById(id);
+  getProjectById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('fingerprint') fingerprint?: string,
+    @Query('view') view?: string,
+  ) {
+    const countView = view === '1' || view === 'true';
+    return this.content.getProjectDetail(id, fingerprint, countView);
+  }
+
+  @Post('projects/:id/like')
+  likeProject(@Param('id', ParseIntPipe) id: number, @Body() dto: LikeDto) {
+    return this.content.likeProject(id, dto.fingerprint);
+  }
+
+  @Post('projects/:id/comments')
+  @UseGuards(OptionalAuthGuard)
+  addProjectComment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CommentDto,
+    @Req() req: {
+      user?: {
+        sub: number;
+        username: string;
+        displayName?: string;
+        avatarUrl?: string;
+        email?: string;
+      };
+    },
+  ) {
+    return this.content.addProjectComment(id, dto.content ?? '', req.user ?? null);
+  }
+
+  @Delete('admin/project-comments/:id')
+  @UseGuards(RootGuard)
+  deleteProjectComment(@Param('id', ParseIntPipe) id: number) {
+    return this.content.deleteProjectComment(id);
   }
 
   @Get('projects')

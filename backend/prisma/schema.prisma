@@ -20,6 +20,7 @@ model User {
   sessions     UserSession[]
   guestbook    Guestbook[]
   comments     Comment[]
+  projectComments ProjectComment[]
 }
 
 model Tag {
@@ -113,6 +114,11 @@ model Project {
   navOrder     Int      @default(0)
   gitSourceId  Int?
   gitSource    GitSource? @relation(fields: [gitSourceId], references: [id], onDelete: SetNull)
+  viewCount    Int      @default(0)
+  likeCount    Int      @default(0)
+  comments     ProjectComment[]
+  likes        ProjectLike[]
+  projectViews ProjectView[]
   updatedAt    DateTime @updatedAt
   createdAt    DateTime @default(now())
 }
@@ -218,4 +224,34 @@ model UserSession {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider     String   @default("local") // local | sso
   createdAt    DateTime @default(now())
+}
+
+model ProjectComment {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nickname  String
+  content   String
+  avatarUrl String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+model ProjectLike {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fingerprint String
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, fingerprint])
+}
+
+model ProjectView {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fingerprint String?
+  createdAt   DateTime @default(now())
 }
