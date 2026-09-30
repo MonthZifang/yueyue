@@ -7,7 +7,7 @@ import { ContentController } from './content.controller';
 import { ContentService } from './content.service';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
-import { UploadController } from './upload.controller';
+import { MediaController } from './media.controller';
 import { ToolsController } from './tools.controller';
 import { ToolsService } from './tools.service';
 import { GitSyncController } from './git-sync.controller';
@@ -32,7 +32,7 @@ const cfg = loadAppConfig();
     AuthController,
     ContentController,
     AdminController,
-    UploadController,
+    MediaController,
     ToolsController,
     GitSyncController,
     SsoController,
