@@ -14,6 +14,7 @@ const links = [
   { to: '/projects', label: '项目' },
   { to: '/gallery', label: '画廊' },
   { to: '/friends', label: '友链' },
+  { to: '/groups', label: '组' },
   { to: '/guestbook', label: '留言板' },
   { to: '/about', label: '关于' },
 ];

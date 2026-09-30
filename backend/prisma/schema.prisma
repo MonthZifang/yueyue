@@ -256,3 +256,17 @@ model ProjectView {
   fingerprint String?
   createdAt   DateTime @default(now())
 }
+model Group {
+  id          Int      @id @default(autoincrement())
+  title       String
+  kind        String   @default("other") // steam | qq | git | discord | other
+  summary     String   @default("")
+  content     String   @default("") // Markdown 详情
+  url         String?  // 外链（Steam组/群链接/Git org）
+  qrImage     String?  // 群二维码或图标
+  cover       String?
+  hidden      Boolean  @default(false)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

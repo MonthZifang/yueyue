@@ -13,6 +13,7 @@ import { ToolsService } from './tools.service';
 import { GitSyncController } from './git-sync.controller';
 import { GitSyncService } from './git-sync.service';
 import { SsoController } from './sso.controller';
+import { GroupController } from './group.controller';
 import { SsoService } from './sso.service';
 import { RootGuard } from './root.guard';
 import { loadAppConfig } from './config';

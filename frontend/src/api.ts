@@ -11,6 +11,7 @@ import type {
   Paged,
   Post,
   Project,
+  Group,
   SiteSetting,
   Tag,
 } from './types';
@@ -166,6 +167,13 @@ export const api = {
     client.post(`/admin/views/${postId}/reset`).then((r) => r.data),
   toolAudit: (limit = 50) =>
     client.get('/admin/tools/audit', { params: { limit } }).then((r) => r.data),
+  groups: () => client.get<Group[]>('/groups').then((r) => r.data),
+  adminGroups: () => client.get<Group[]>('/admin/groups').then((r) => r.data),
+  createGroup: (body: Record<string, unknown>) =>
+    client.post<Group>('/admin/groups', body).then((r) => r.data),
+  updateGroup: (id: number, body: Record<string, unknown>) =>
+    client.patch<Group>('/admin/groups/' + id, body).then((r) => r.data),
+  deleteGroup: (id: number) => client.delete('/admin/groups/' + id).then((r) => r.data),
   site: () => client.get<SiteSetting>('/site').then((r) => r.data),
   adminSite: () => client.get<SiteSetting>('/admin/site').then((r) => r.data),
   updateSite: (body: Partial<SiteSetting>) =>

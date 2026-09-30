@@ -143,3 +143,16 @@ export interface ArchiveYear {
   year: string;
   months: ArchiveMonth[];
 }
+
+export interface Group {
+  id: number;
+  title: string;
+  kind: string;
+  summary: string;
+  content: string;
+  url?: string | null;
+  qrImage?: string | null;
+  cover?: string | null;
+  hidden?: boolean;
+  sort?: number;
+}

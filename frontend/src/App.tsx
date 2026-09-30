@@ -12,6 +12,8 @@ import ProjectDetail from './pages/ProjectDetail';
 import Gallery from './pages/Gallery';
 import Friends from './pages/Friends';
 import Guestbook from './pages/Guestbook';
+import Groups from './pages/Groups';
+import AdminGroups from './pages/admin/AdminGroups';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPosts from './pages/admin/AdminPosts';
@@ -71,6 +73,7 @@ export default function App() {
         <Route path="gallery" element={<Gallery />} />
         <Route path="friends" element={<Friends />} />
         <Route path="guestbook" element={<Guestbook />} />
+        <Route path="groups" element={<Groups />} />
       </Route>
       <Route path="admin/login" element={<AdminLogin />} />
       <Route path="auth/sso/callback" element={<SsoCallback />} />
@@ -82,6 +85,7 @@ export default function App() {
         <Route path="content" element={<AdminContent />} />
         <Route path="git" element={<AdminGit />} />
         <Route path="tools" element={<AdminTools />} />
+        <Route path="groups" element={<AdminGroups />} />
       </Route>
     </Routes>
   );
