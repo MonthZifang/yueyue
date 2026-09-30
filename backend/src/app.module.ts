@@ -36,6 +36,7 @@ const cfg = loadAppConfig();
     ToolsController,
     GitSyncController,
     SsoController,
+    GroupController,
   ],
   providers: [
     PrismaService,
