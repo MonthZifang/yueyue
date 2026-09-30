@@ -18,7 +18,8 @@
     "rootUserIds": ["0"],
     "rootPublicIds": [0]
   },
-  "databaseUrl": "postgresql://monthzifang:435515426a@192.168.0.140:5432/yueyue",`r`n  "auth": {
+  "databaseUrl": "postgresql://monthzifang:435515426a@192.168.0.140:5432/yueyue",
+  "auth": {
     "jwtSecret": "yueyuedao-blog-jwt",
     "tokenExpiresIn": "7d"
   },

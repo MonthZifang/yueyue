@@ -37,16 +37,46 @@ export class AdminService {
     return post;
   }
 
+  /** 自动 slug：从 1000 起顺序分配；删除文章后编号标记失效但不复用 */
+  async nextAutoSlug(): Promise<string> {
+    const last = await this.prisma.usedSlug.findFirst({
+      orderBy: { code: 'desc' },
+    });
+    let code = (last?.code ?? 999) + 1;
+    // 若存在但未记录的历史 slug（如手工写入），继续向后找空闲
+    for (let i = 0; i < 50; i += 1) {
+      const slug = String(code);
+      const used = await this.prisma.usedSlug.findUnique({ where: { code } });
+      const clash = await this.prisma.post.findUnique({ where: { slug } });
+      if (!used && !clash) {
+        await this.prisma.usedSlug.create({
+          data: { code, slug, expired: false },
+        });
+        return slug;
+      }
+      code += 1;
+    }
+    throw new BadRequestException('无法分配自动 slug');
+  }
   async createPost(input: PostInput) {
     if (!['draft', 'published'].includes(input.status || 'draft')) {
       throw new BadRequestException('status 只能是 draft 或 published');
     }
-    const exists = await this.prisma.post.findUnique({ where: { slug: input.slug } });
+    let slug = (input.slug || '').trim();
+    if (!slug) {
+      slug = await this.nextAutoSlug();
+    }
+    const exists = await this.prisma.post.findUnique({ where: { slug } });
     if (exists) throw new ConflictException('slug 已存在');
+    await this.prisma.usedSlug.upsert({
+      where: { slug },
+      update: {},
+      create: { slug, code: parseInt(slug, 10) || 0 },
+    });
     return this.prisma.post.create({
       data: {
         title: input.title,
-        slug: input.slug,
+        slug,
         summary: input.summary,
         content: input.content,
         cover: input.cover ?? null,
@@ -95,8 +125,12 @@ export class AdminService {
   }
 
   async deletePost(id: number) {
-    await this.getPost(id);
+    const post = await this.getPost(id);
     await this.prisma.post.delete({ where: { id } });
+    await this.prisma.usedSlug.updateMany({
+      where: { slug: post.slug },
+      data: { expired: true, postId: null },
+    });
     return { ok: true };
   }
 

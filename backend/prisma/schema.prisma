@@ -281,3 +281,10 @@ model Media {
   data      Bytes
   createdAt DateTime @default(now())
 }
+model UsedSlug {
+  code      Int      @id // 1000 起的编号，删除文章后仍占用，不复用
+  slug      String   @unique
+  postId    Int?
+  expired   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
