@@ -57,6 +57,9 @@ export default function AdminDashboard() {
             <NavLink to="/admin/git" className="btn-ghost">
               Git 项目
             </NavLink>
+            <NavLink to="/admin/media" className="btn-ghost">
+              图片库
+            </NavLink>
             <NavLink to="/admin/groups" className="btn-ghost">
               组
             </NavLink>

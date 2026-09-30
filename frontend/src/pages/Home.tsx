@@ -91,7 +91,7 @@ export default function Home() {
         <div>
           <h3 className="font-display text-lg font-bold">来自月月岛的便签</h3>
           <p className="text-sm text-ink/75 dark:text-white/70">
-            站点使用 React + NestJS 构建，文章支持 Markdown、评论与点赞。管理员登录后台即可发布与配置首页。
+            站点使用 React + NestJS 构建。
           </p>
         </div>
       </section>

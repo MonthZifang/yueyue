@@ -14,6 +14,7 @@ import Friends from './pages/Friends';
 import Guestbook from './pages/Guestbook';
 import Groups from './pages/Groups';
 import AdminGroups from './pages/admin/AdminGroups';
+import AdminMedia from './pages/admin/AdminMedia';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPosts from './pages/admin/AdminPosts';
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="git" element={<AdminGit />} />
         <Route path="tools" element={<AdminTools />} />
         <Route path="groups" element={<AdminGroups />} />
+        <Route path="media" element={<AdminMedia />} />
       </Route>
     </Routes>
   );

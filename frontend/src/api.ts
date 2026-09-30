@@ -106,7 +106,9 @@ export const api = {
   adminUpload: (file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return client.post<{ url: string }>('/admin/upload', form).then((r) => r.data);
+    return client
+      .post<{ id: number; url: string; idUrl?: string; filename: string; displayName?: string }>('/admin/upload', form)
+      .then((r) => r.data);
   },
   ssoStatus: () => client.get<{ enabled: boolean }>('/auth/sso/status').then((r) => r.data),
   ssoLogin: (returnTo?: string) =>
@@ -162,6 +164,10 @@ export const api = {
     client.post(`/admin/tools/proxy/profiles/${id}`, body).then((r) => r.data),
   deleteProxyProfile: (id: number) =>
     client.delete(`/admin/tools/proxy/profiles/${id}`).then((r) => r.data),
+  adminMedia: () => client.get('/admin/media').then((r) => r.data),
+  updateMedia: (id: number, body: Record<string, unknown>) =>
+    client.patch('/admin/media/' + id, body).then((r) => r.data),
+  deleteMedia: (id: number) => client.delete('/admin/media/' + id).then((r) => r.data),
   syncAvatars: () => client.post('/auth/sync-avatars').then((r) => r.data),
   viewStats: () => client.get('/admin/views').then((r) => r.data),
   resetViews: (postId: number) =>

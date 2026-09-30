@@ -3,6 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import type { Tag } from '../../types';
 
+function resolveCover(v: string): string {
+  const t = (v || '').trim();
+  if (!t) return '';
+  if (/^https?:/i.test(t) || t.startsWith('/')) return t;
+  if (/^\d+$/.test(t)) return `/api/media/${t}`;
+  return t;
+}
+
 export default function AdminPostEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -64,7 +72,7 @@ export default function AdminPostEditor() {
     <form onSubmit={onSubmit} className="card space-y-4 p-6">
       <h1 className="font-display text-2xl font-bold">{id ? '编辑文章' : '新建文章'}</h1>
       <input className="input" placeholder="标题" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      <input className="input" placeholder="slug（URL）" value={slug} onChange={(e) => setSlug(e.target.value)} required />
+      <input className="input" placeholder="slug（可留空自动编号 1000+）" value={slug} onChange={(e) => setSlug(e.target.value)} />
       <textarea className="input" placeholder="摘要" value={summary} onChange={(e) => setSummary(e.target.value)} required />
       <textarea
         className="input min-h-[240px] font-mono text-sm"
@@ -95,7 +103,15 @@ export default function AdminPostEditor() {
         </label>
       </div>
       {cover && (
-        <img src={cover} alt="封面预览" className="h-40 w-full rounded-2xl object-cover" />
+        <>
+          <img
+            src={resolveCover(cover)}
+            alt="封面预览"
+            className="h-40 w-full rounded-2xl object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <p className="text-xs text-ink/50">支持：图片 ID、/api/media/ID、/uploads/文件名、完整 URL</p>
+        </>
       )}
       <div>
         <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">

@@ -274,12 +274,13 @@ model Group {
   updatedAt   DateTime @updatedAt
 }
 model Media {
-  id        Int      @id @default(autoincrement())
-  filename  String   @unique
-  mime      String
-  size      Int
-  data      Bytes
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  filename    String   @unique
+  displayName String?
+  mime        String
+  size        Int
+  data        Bytes
+  createdAt   DateTime @default(now())
 }
 model UsedSlug {
   code      Int      @id // 1000 起的编号，删除文章后仍占用，不复用
