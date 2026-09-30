@@ -17,6 +17,7 @@ export interface SiteSettingDto {
   footerNote?: string;
   aboutTitle?: string;
   commentRequireSso?: boolean;
+  viewUniqueMode?: boolean;
 }
 
 @Injectable()
@@ -44,6 +45,7 @@ export class ContentService {
         footerNote: dto.footerNote,
         aboutTitle: dto.aboutTitle,
         commentRequireSso: dto.commentRequireSso,
+        viewUniqueMode: dto.viewUniqueMode,
       },
     });
   }
@@ -106,19 +108,37 @@ export class ContentService {
 
     let viewCount = post.viewCount;
     if (countView) {
-      // 每点击一次 +1
-      const updated = await this.prisma.post.update({
-        where: { id: post.id },
-        data: { viewCount: { increment: 1 } },
-        select: { viewCount: true },
-      });
-      viewCount = updated.viewCount;
-      if (fingerprint?.trim()) {
-        await this.prisma.postView
-          .create({
-            data: { postId: post.id, fingerprint: fingerprint.trim() },
-          })
-          .catch(() => undefined);
+      const settings = await this.siteSettings();
+      const fp = fingerprint?.trim() || '';
+      if (settings.viewUniqueMode && fp) {
+        // 去重模式：同一 fingerprint 只计 1 次
+        const exists = await this.prisma.postView.findUnique({
+          where: { postId_fingerprint: { postId: post.id, fingerprint: fp } },
+        });
+        if (!exists) {
+          await this.prisma.postView.create({
+            data: { postId: post.id, fingerprint: fp },
+          });
+          const updated = await this.prisma.post.update({
+            where: { id: post.id },
+            data: { viewCount: { increment: 1 } },
+            select: { viewCount: true },
+          });
+          viewCount = updated.viewCount;
+        }
+      } else {
+        // 默认：每点击一次 +1
+        const updated = await this.prisma.post.update({
+          where: { id: post.id },
+          data: { viewCount: { increment: 1 } },
+          select: { viewCount: true },
+        });
+        viewCount = updated.viewCount;
+        if (fp) {
+          await this.prisma.postView
+            .create({ data: { postId: post.id, fingerprint: fp } })
+            .catch(() => undefined);
+        }
       }
     }
 
@@ -530,16 +550,35 @@ export class ContentService {
 
     let viewCount = project.viewCount;
     if (countView) {
-      const updated = await this.prisma.project.update({
-        where: { id: project.id },
-        data: { viewCount: { increment: 1 } },
-        select: { viewCount: true },
-      });
-      viewCount = updated.viewCount;
-      if (fingerprint?.trim()) {
-        await this.prisma.projectView
-          .create({ data: { projectId: project.id, fingerprint: fingerprint.trim() } })
-          .catch(() => undefined);
+      const settings = await this.siteSettings();
+      const fp = fingerprint?.trim() || '';
+      if (settings.viewUniqueMode && fp) {
+        const exists = await this.prisma.projectView.findFirst({
+          where: { projectId: project.id, fingerprint: fp },
+        });
+        if (!exists) {
+          await this.prisma.projectView.create({
+            data: { projectId: project.id, fingerprint: fp },
+          });
+          const updated = await this.prisma.project.update({
+            where: { id: project.id },
+            data: { viewCount: { increment: 1 } },
+            select: { viewCount: true },
+          });
+          viewCount = updated.viewCount;
+        }
+      } else {
+        const updated = await this.prisma.project.update({
+          where: { id: project.id },
+          data: { viewCount: { increment: 1 } },
+          select: { viewCount: true },
+        });
+        viewCount = updated.viewCount;
+        if (fp) {
+          await this.prisma.projectView
+            .create({ data: { projectId: project.id, fingerprint: fp } })
+            .catch(() => undefined);
+        }
       }
     }
 

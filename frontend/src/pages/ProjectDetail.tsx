@@ -24,11 +24,11 @@ export default function ProjectDetail() {
   useEffect(() => {
     if (!id) return;
     const fp = getFingerprint();
-    const key = `pview:${id}`;
-    const shouldCount = !sessionStorage.getItem(key);
-    if (shouldCount) sessionStorage.setItem(key, '1');
+
+
+
     api
-      .getProject(Number(id), fp, shouldCount)
+      .getProject(Number(id), fp, true)
       .then((p) => {
         setProject(p);
         setLikeCount(p.likeCount ?? 0);

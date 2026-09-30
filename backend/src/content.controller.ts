@@ -85,6 +85,7 @@ class SiteDto {
   @IsOptional() @IsString() footerNote?: string;
   @IsOptional() @IsString() aboutTitle?: string;
   @IsOptional() @IsBoolean() commentRequireSso?: boolean;
+  @IsOptional() @IsBoolean() viewUniqueMode?: boolean;
 }
 
 @Controller()

@@ -216,6 +216,7 @@ model SiteSetting {
   footerNote  String @default("以清透的风写代码与梦")
   aboutTitle  String @default("关于月月岛")
   commentRequireSso Boolean @default(true)
+  viewUniqueMode    Boolean @default(false) // true=按访客去重；false=每次点击+1
 }
 
 model UserSession {

@@ -153,6 +153,14 @@ export default function AdminContent() {
             评论需要 SSO 统一登录
           </label>
           <button type="submit" className="btn">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={Boolean(site.viewUniqueMode)}
+              onChange={(e) => setSite({ ...site, viewUniqueMode: e.target.checked })}
+            />
+            阅读去重（关掉 = 每次点击 +1）
+          </label>
             保存首页配置
           </button>
         </form>

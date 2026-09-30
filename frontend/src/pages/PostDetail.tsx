@@ -23,13 +23,8 @@ export default function PostDetail() {
   useEffect(() => {
     if (!slug) return;
     const fingerprint = getFingerprint();
-    // 同一会话内同一篇文章只计 1 次阅读，避免 StrictMode/重复 effect 导致 +2
-    const viewKey = `viewed:${slug}`;
-    const shouldCount = !sessionStorage.getItem(viewKey);
-    if (shouldCount) {
-      sessionStorage.setItem(viewKey, '1');
-    }
-    api.getPost(slug, fingerprint, shouldCount).then((p) => {
+    // 每次打开都上报阅读；是否去重由后台开关决定
+    api.getPost(slug, fingerprint, true).then((p) => {
       setPost(p);
       setLikeCount(p.likeCount ?? 0);
       setLiked(Boolean(p.liked));

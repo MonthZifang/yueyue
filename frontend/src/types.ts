@@ -8,6 +8,7 @@ export interface SiteSetting {
   footerNote: string;
   aboutTitle: string;
   commentRequireSso: boolean;
+  viewUniqueMode?: boolean;
 }
 
 export interface Tag {
