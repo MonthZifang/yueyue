@@ -2,7 +2,23 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { Group } from '../../types';
 
-const KINDS = [
+function parseKinds(json?: string): { value: string; label: string }[] {
+  try {
+    const arr = JSON.parse(json || '[]');
+    if (Array.isArray(arr) && arr.length) {
+      return arr.map((x) => ({ value: String(x.value), label: String(x.label) }));
+    }
+  } catch { /* */ }
+  return [
+    { value: 'steam', label: 'Steam' },
+    { value: 'qq', label: 'QQ 群' },
+    { value: 'git', label: 'Git 组织' },
+    { value: 'discord', label: 'Discord' },
+    { value: 'other', label: '其他' },
+  ];
+}
+
+const KINDS_DEFAULT = [
   ['steam', 'Steam'],
   ['qq', 'QQ 群'],
   ['git', 'Git 组织'],
@@ -13,9 +29,11 @@ const KINDS = [
 export default function AdminGroups() {
   const [items, setItems] = useState<Group[]>([]);
   const [msg, setMsg] = useState('');
+  const [kinds, setKinds] = useState<{ value: string; label: string }[]>([]);
 
   function load() {
     api.adminGroups().then(setItems);
+    api.site().then((s) => setKinds(parseKinds(s.groupKindsJson))).catch(() => undefined);
   }
 
   useEffect(() => {
@@ -67,9 +85,9 @@ export default function AdminGroups() {
                 value={g.kind}
                 onChange={(e) => setItems((list) => list.map((x) => (x.id === g.id ? { ...x, kind: e.target.value } : x)))}
               >
-                {KINDS.map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
+                {(kinds.length ? kinds : KINDS_DEFAULT.map(([value, label]) => ({ value, label }))).map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
                   </option>
                 ))}
               </select>

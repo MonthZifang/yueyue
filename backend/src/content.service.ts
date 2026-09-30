@@ -18,6 +18,9 @@ export interface SiteSettingDto {
   aboutTitle?: string;
   commentRequireSso?: boolean;
   viewUniqueMode?: boolean;
+  groupsTitle?: string;
+  groupsSubtitle?: string;
+  groupKindsJson?: string;
 }
 
 @Injectable()
@@ -46,6 +49,9 @@ export class ContentService {
         aboutTitle: dto.aboutTitle,
         commentRequireSso: dto.commentRequireSso,
         viewUniqueMode: dto.viewUniqueMode,
+        groupsTitle: dto.groupsTitle,
+        groupsSubtitle: dto.groupsSubtitle,
+        groupKindsJson: dto.groupKindsJson,
       },
     });
   }

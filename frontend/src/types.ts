@@ -9,6 +9,9 @@ export interface SiteSetting {
   aboutTitle: string;
   commentRequireSso: boolean;
   viewUniqueMode?: boolean;
+  groupsTitle?: string;
+  groupsSubtitle?: string;
+  groupKindsJson?: string;
 }
 
 export interface Tag {

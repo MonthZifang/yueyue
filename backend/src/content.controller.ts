@@ -86,6 +86,9 @@ class SiteDto {
   @IsOptional() @IsString() aboutTitle?: string;
   @IsOptional() @IsBoolean() commentRequireSso?: boolean;
   @IsOptional() @IsBoolean() viewUniqueMode?: boolean;
+  @IsOptional() @IsString() groupsTitle?: string;
+  @IsOptional() @IsString() groupsSubtitle?: string;
+  @IsOptional() @IsString() groupKindsJson?: string;
 }
 
 @Controller()

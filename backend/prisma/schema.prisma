@@ -217,6 +217,9 @@ model SiteSetting {
   aboutTitle  String @default("关于月月岛")
   commentRequireSso Boolean @default(true)
   viewUniqueMode    Boolean @default(false) // true=按访客去重；false=每次点击+1
+  groupsTitle       String  @default("组 / 社群")
+  groupsSubtitle    String  @default("Steam 组、QQ 群、Git 组织等，欢迎加入")
+  groupKindsJson    String  @default("[]") // [{value,label}]
 }
 
 model UserSession {

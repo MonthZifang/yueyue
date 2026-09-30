@@ -161,6 +161,22 @@ export default function AdminContent() {
             />
             阅读去重（关掉 = 每次点击 +1）
           </label>
+          <label className="block text-sm">
+            组页面标题
+            <input className="input mt-1" value={site.groupsTitle ?? ''} onChange={(e) => setSite({ ...site, groupsTitle: e.target.value })} />
+          </label>
+          <label className="block text-sm">
+            组页面副标题
+            <input className="input mt-1" value={site.groupsSubtitle ?? ''} onChange={(e) => setSite({ ...site, groupsSubtitle: e.target.value })} />
+          </label>
+          <label className="block text-sm">
+            组类型标签（JSON 数组：value 与 label，例如 QQ 群 / Steam / Git 组织）
+            <textarea
+              className="input mt-1 min-h-[80px] font-mono text-xs"
+              value={site.groupKindsJson ?? ''}
+              onChange={(e) => setSite({ ...site, groupKindsJson: e.target.value })}
+            />
+          </label>
             保存首页配置
           </button>
         </form>
